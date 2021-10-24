@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2015 Terracotta, Inc., a Software AG company.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +19,8 @@ import java.nio.ByteBuffer;
 
 /**
  * A source of NIO buffers of some type.
- * 
+ * 某种类型的NIO缓冲区的来源。
+ *
  * @author Chris Dennis
  */
 public interface BufferSource {
@@ -30,6 +31,10 @@ public interface BufferSource {
    * If a suitable buffer cannot be allocated then {@code null} should be
    * returned.  Implementations may place restrictions on the valid size value
    * they will accept.
+   *
+   * 分配给定大小的缓冲区
+   * 如果无法分配合适的缓冲区，则应返回{@code null}。
+   * 实现可能会限制它们将接受的有效大小值。
    *
    * @param size required buffer size
    * @return a buffer of the required size

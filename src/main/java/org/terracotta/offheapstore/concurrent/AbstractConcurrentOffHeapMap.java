@@ -40,10 +40,13 @@ import org.terracotta.offheapstore.util.Factory;
 
 /**
  * An abstract concurrent (striped) off-heap map.
+ * 抽象并发（条带化）堆外映射。
  * <p>
  * This is an n-way hashcode striped map implementation.  Subclasses must
  * provide a {@link Factory} instance at construction time from which
  * the required number of segments are created.
+ * 这是一个n路 hashcode条带映射实现。
+ * 子类必须在构造时提供一个{@link Factory}实例，从中创建所需数量的段。
  *
  * @param <K> the type of keys maintained by this map
  * @param <V> the type of mapped values
@@ -52,7 +55,7 @@ import org.terracotta.offheapstore.util.Factory;
  */
 public abstract class AbstractConcurrentOffHeapMap<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V>, ConcurrentMapInternals, HashingMap<K, V> {
 
-  private static final int MAX_SEGMENTS = 1 << 16; // slightly conservative
+  private static final int MAX_SEGMENTS = 1 << 16; // slightly conservative 略显保守
   private static final int DEFAULT_CONCURRENCY = 16;
 
   protected final Segment<K, V>[] segments;
@@ -91,6 +94,7 @@ public abstract class AbstractConcurrentOffHeapMap<K, V> extends AbstractMap<K, 
     }
 
     // Find power-of-two sizes best matching arguments
+    // yukms TODO: 找到两个大小的最佳匹配参数的幂
     int sshift = 0;
     int ssize = 1;
     while (ssize < concurrency) {

@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2015 Terracotta, Inc., a Software AG company.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,12 +23,15 @@ public interface PageSource {
 
   /**
    * Attempt to allocate a page of the given size.
+   * 尝试分配给定大小的页面。
    * <p>
    * Allocations identified as thieves will if necessary 'steal' space from
    * previous allocations identified as 'victims' in order to fulfill the
    * allocation request.  <code>owner</code> is the area from which the
    * returned page can subsequently be stolen or recovered.  This is most likely
    * to be the calling instance.
+   * 如有必要，标识为盗贼的分配将从以前标识为“受害者”的分配中“窃取”空间，以满足分配请求<code>owner<code>是随后可以从中窃取或恢复返回页面的区域。
+   * 这很可能是调用实例。
    *
    * @param size size of page to allocate
    * @param thief {@code true} if the allocation can steal space from victims

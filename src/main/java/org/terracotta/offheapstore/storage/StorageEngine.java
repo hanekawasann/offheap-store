@@ -20,11 +20,14 @@ import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * An object that encodes map/cache keys and values to integers.
+ * 将map/cache键和值编码为整数的对象
  * <p>
  * {@code StorageEngine} instances can choose their own method of value/key
  * encoding.  Keys that are small enough to be fully encoded in the
  * {@code Integer} return can be stored directly in the table, others could be
  * stored in some additional data structure.
+ * {@code StorageEngine}实例可以选择自己的value/key编码方法。
+ * 小到可以在{@code Integer}返回中完全编码的键可以直接存储在表中，其他键可以存储在其他数据结构中。
  *
  * @param <K> key type handled by this engine
  * @param <V> value type handled by this engine
@@ -35,6 +38,7 @@ public interface StorageEngine<K, V> {
 
   /**
    * Converts the supplied key and value objects into their encoded form.
+   * 将提供的键和值对象转换为其编码形式。
    *
    * @param key a key object
    * @param value a value object
@@ -48,9 +52,11 @@ public interface StorageEngine<K, V> {
 
   /**
    * Called to indicate that the associated encoded value is no longer needed.
+   * 调用以指示不再需要关联的编码值。
    * <p>
    * This call can be used to free any associated resources tied to the
    * lifecycle of the supplied encoded value.
+   * 此调用可用于释放与所提供编码值的生命周期相关联的任何资源。
    *
    * @param encoding encoded value
    * @param hash hash of the freed mapping
@@ -60,6 +66,7 @@ public interface StorageEngine<K, V> {
 
   /**
    * Converts the supplied encoded value into its correct object form.
+   * 将提供的编码值转换为其正确的对象形式。
    *
    * @param encoding encoded value
    * @return a decoded value object
@@ -69,11 +76,14 @@ public interface StorageEngine<K, V> {
   /**
    * Called to determine the equality of the given Java object value against the
    * given encoded form.
+   * 调用以确定给定Java对象值与给定编码形式的相等性。
    * <p>
    * Simple implementations will probably perform a decode on the given encoded
    * form in order to do a regular {@code Object.equals(Object)} comparison.
    * This method is provided to allow implementations to optimize this
    * comparison if possible.
+   * 简单的实现可能会对给定的编码形式执行解码，以便进行规则的{@code Object.equals（Object）}比较。
+   * 提供此方法是为了允许实现在可能的情况下优化此比较。
    *
    * @param value a value object
    * @param encoding encoded value
@@ -83,6 +93,7 @@ public interface StorageEngine<K, V> {
 
   /**
    * Converts the supplied encoded key into its correct object form.
+   * 将提供的编码密钥转换为其正确的对象形式。
    *
    * @param encoding encoded key
    * @param hashCode hash-code of the decoded key
@@ -93,11 +104,14 @@ public interface StorageEngine<K, V> {
   /**
    * Called to determine the equality of the given object against the
    * given encoded form.
+   * 调用以确定给定对象与给定编码形式的相等性。
    * <p>
    * Simple implementations will probably perform a decode on the given encoded
    * form in order to do a regular {@code Object.equals(Object)} comparison.
    * This method is provided to allow implementations to optimize this
    * comparison if possible.
+   * 简单的实现可能会对给定的编码形式执行解码，以便进行规则的{@code Object.equals（Object）}比较。
+   * 提供此方法是为了允许实现在可能的情况下优化此比较。
    *
    * @param key a key object
    * @param encoding encoded value
@@ -107,11 +121,13 @@ public interface StorageEngine<K, V> {
 
   /**
    * Called to indicate that all keys and values are now free.
+   * 调用以指示所有键和值现在都是自由的。
    */
   void clear();
 
   /**
    * Returns a measure of the amount of memory allocated for this storage engine.
+   * 返回为此存储引擎分配的内存量的度量值。
    *
    * @return memory allocated for this engine in bytes
    */
@@ -119,6 +135,7 @@ public interface StorageEngine<K, V> {
 
   /**
    * Returns a measure of the amount of memory consumed by this storage engine.
+   * 返回此存储引擎消耗的内存量的度量值。
    *
    * @return memory occupied by this engine in bytes
    */
@@ -126,6 +143,7 @@ public interface StorageEngine<K, V> {
 
   /**
    * Returns a measure of the amount of vital memory allocated for this storage engine.
+   * 返回为此存储引擎分配的重要内存量的度量值。
    *
    * @return vital memory allocated for this engine in bytes
    */
@@ -133,6 +151,7 @@ public interface StorageEngine<K, V> {
 
   /**
    * Returns a measure of the total size of the keys and values stored in this storage engine.
+   * 返回存储在此存储引擎中的键和值的总大小的度量值。
    *
    * @return size of the stored keys and values in bytes
    */
@@ -140,10 +159,13 @@ public interface StorageEngine<K, V> {
 
   /**
    * Invalidate any local key/value caches.
+   * 使任何本地键值缓存无效。
    * <p>
    * This is called to indicate the termination of a map write "phase".  Caching
    * is permitted within a write operation (i.e. to cache around allocation
    * failures during eviction processes).
+   * 调用此命令是为了指示映射写入“阶段”的终止。
+   * 允许在写操作中进行缓存（即在逐出过程中缓存分配失败）。
    */
   void invalidateCache();
 

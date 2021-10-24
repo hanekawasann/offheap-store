@@ -51,12 +51,17 @@ public class OffHeapStorageArea {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OffHeapStorageArea.class);
   private static final boolean VALIDATING = shouldValidate(OffHeapStorageArea.class);
+  // yukms TODO: 2的幂次方的最大值
   private static final long LARGEST_POWER_OF_TWO = Integer.highestOneBit(Integer.MAX_VALUE);
   private static final ByteBuffer[] EMPTY_BUFFER_ARRAY = new ByteBuffer[0];
 
+  // yukms TODO: 初始页面大小
   private final int initialPageSize;
+  // yukms TODO: 最大页面大小
   private final int maximalPageSize;
+  // yukms TODO: 页面增长区域大小
   private final int pageGrowthAreaSize;
+  // yukms TODO: 压缩阈值
   private final float compressThreshold;
 
   private final Owner owner;
@@ -71,6 +76,8 @@ public class OffHeapStorageArea {
    * the AbstractLockedOffHeapHashMap (segment) level so one stripe is
    * sufficient. Switching to a Hashtable/Collections.synchronizedMap(...) would
    * be bad however as we need concurrent read access still.
+   * 由于AbstractLockedOffHeapHashMap（段）级别的写排除，此映射在写入时仅由一个线程访问，因此一个条带就足够了。
+   * 但是，切换到HashtableCollections.synchronizedMap（…）会很糟糕，因为我们仍然需要并发读取访问。
    */
   private final Map<Integer, Page> pages = new ConcurrentHashMap<>(1, 0.75f, 1);
 
@@ -91,6 +98,7 @@ public class OffHeapStorageArea {
 
   public OffHeapStorageArea(PointerSize width, Owner owner, PageSource pageSource, int initialPageSize, int maximalPageSize, boolean thief, boolean victim, float compressThreshold) {
     if (victim && maximalPageSize != initialPageSize) {
+      // yukms TODO: 堆存储区域的可变页面大小不能成为受害者，因为它们不支持窃取。
       throw new IllegalArgumentException("Variable page-size offheap storage areas cannot be victims as they do not support stealing.");
     }
 
@@ -108,12 +116,15 @@ public class OffHeapStorageArea {
         throw new UnsupportedOperationException();
     }
 
+    // yukms TODO: 设置initialPageSize
     initialPageSize = Math.max(allocator.getMinimalSize(), initialPageSize);
     if (Integer.bitCount(initialPageSize) == 1) {
+      // yukms TODO: 已经是2的幂次方了
       this.initialPageSize = (int) Math.min(LARGEST_POWER_OF_TWO, initialPageSize);
     } else {
       this.initialPageSize = (int) Math.min(LARGEST_POWER_OF_TWO, Long.highestOneBit(initialPageSize) << 1);
     }
+    // yukms TODO: 设置maximalPageSize
     if (maximalPageSize < initialPageSize) {
       this.maximalPageSize = initialPageSize;
     } else if (Integer.bitCount(maximalPageSize) == 1) {
@@ -121,6 +132,7 @@ public class OffHeapStorageArea {
     } else {
       this.maximalPageSize = (int) Math.min(LARGEST_POWER_OF_TWO, Long.highestOneBit(maximalPageSize) << 1);
     }
+    // yukms TODO: maximalPageSize与initialPageSize差值
     this.pageGrowthAreaSize = this.maximalPageSize - this.initialPageSize;
     this.compressThreshold = compressThreshold;
     this.thief = thief;

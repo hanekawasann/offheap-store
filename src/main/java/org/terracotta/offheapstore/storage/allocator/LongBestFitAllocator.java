@@ -32,6 +32,7 @@ import static org.terracotta.offheapstore.util.Validation.validate;
 
 /**
  * An aggressively best-fit allocator.
+ * 一个积极的最合适的分配器。
  *
  * @author Chris Dennis
  */

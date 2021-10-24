@@ -32,10 +32,13 @@ import static org.terracotta.offheapstore.util.ByteBufferUtils.totalLength;
 
 /**
  * A generic ByteBuffer based key/value store.
+ * 基于ByteBuffer的通用键值存储。
  * <p>
  * This storage engine implementation uses {@link Portability} instances to
  * convert key/value instances in to ByteBuffers.  The content of these
  * ByteBuffers are then stored in slices of a single large data area.
+ * 此存储引擎实现使用{@link Portability}实例将中的keyvalue实例转换为ByteBuffers。
+ * 这些字节缓冲区的内容然后存储在单个大数据区的切片中。
  *
  * @param <K> key type handled by this engine
  * @param <V> value type handled by this engine

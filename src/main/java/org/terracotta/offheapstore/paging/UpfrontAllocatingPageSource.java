@@ -52,10 +52,13 @@ import static org.terracotta.offheapstore.storage.allocator.PowerOfTwoAllocator.
 
 /**
  * An upfront allocating direct byte buffer source.
+ * 一种预先分配的直接字节缓冲源。
  * <p>
  * This buffer source implementation allocates all of its required storage
  * up-front in fixed size chunks.  Runtime allocations are then satisfied using
  * slices from these initial chunks.
+ * 此缓冲区源实现将其所有所需的存储预先分配到固定大小的块中。
+ * 然后使用来自这些初始块的切片来满足运行时分配。
  *
  * @author Chris Dennis
  */
@@ -78,7 +81,9 @@ public class UpfrontAllocatingPageSource implements PageSource {
     private final SortedMap<Long, Runnable> risingThresholds = new TreeMap<>();
     private final SortedMap<Long, Runnable> fallingThresholds = new TreeMap<>();
 
+    // yukms TODO: 片分配器
     private final List<PowerOfTwoAllocator> sliceAllocators = new ArrayList<>();
+    // yukms TODO: 受害者分配器
     private final List<PowerOfTwoAllocator> victimAllocators = new ArrayList<>();
 
     private final List<ByteBuffer> buffers = new ArrayList<>();
@@ -89,6 +94,8 @@ public class UpfrontAllocatingPageSource implements PageSource {
      * being used here.  I more flexible implementation might involve switching
      * to using an AATreeSet subclass - that would also require me to finish
      * writing the subSet implementation for that class.
+     * 目前，由于此处使用的区域分配的对齐属性，树集和上面的比较器可用于子集查询。
+     * 我认为更灵活的实现可能需要切换到使用AATreeSet子类——这也需要我完成该类的子集实现的编写。
      */
     private final List<NavigableSet<Page>> victims = new ArrayList<>();
 
@@ -111,9 +118,9 @@ public class UpfrontAllocatingPageSource implements PageSource {
      * maximally sized chunks, within the given bounds.
      *
      * @param source     source from which initial buffers will be allocated
-     * @param toAllocate total space to allocate in bytes
-     * @param maxChunk   the largest chunk size in bytes
-     * @param minChunk   the smallest chunk size in bytes
+     * @param toAllocate total space to allocate in bytes 要分配的总空间（字节）
+     * @param maxChunk   the largest chunk size in bytes 以字节为单位的最大块大小
+     * @param minChunk   the smallest chunk size in bytes 以字节为单位的最小块大小
      */
     public UpfrontAllocatingPageSource(BufferSource source, long toAllocate, int maxChunk, int minChunk) {
         this(source, toAllocate, maxChunk, minChunk, false);
@@ -131,16 +138,18 @@ public class UpfrontAllocatingPageSource implements PageSource {
    * @param toAllocate total space to allocate in bytes
    * @param maxChunk   the largest chunk size in bytes
    * @param minChunk   the smallest chunk size in bytes
-   * @param fixed      if the chunks should all be of size {@code maxChunk} or can be smaller
+   * @param fixed      if the chunks should all be of size {@code maxChunk} or can be smaller 如果块的大小都应为{@code maxChunk}或更小
    */
     private UpfrontAllocatingPageSource(BufferSource source, long toAllocate, int maxChunk, int minChunk, boolean fixed) {
         Long totalPhysical = PhysicalMemory.totalPhysicalMemory();
         Long freePhysical = PhysicalMemory.freePhysicalMemory();
         if (totalPhysical != null && toAllocate > totalPhysical) {
+          // yukms TODO: 分配大小大于总物理内存大小
           throw new IllegalArgumentException("Attempting to allocate " + DebuggingUtils.toBase2SuffixedString(toAllocate) + "B of memory "
                   + "when the host only contains " + DebuggingUtils.toBase2SuffixedString(totalPhysical) + "B of physical memory");
         }
         if (freePhysical != null && toAllocate > freePhysical) {
+          // yukms TODO: 分配大小大于空闲物理内存大小
           LOGGER.warn("Attempting to allocate {}B of offheap when there is only {}B of free physical memory - some paging will therefore occur.",
                   DebuggingUtils.toBase2SuffixedString(toAllocate), DebuggingUtils.toBase2SuffixedString(freePhysical));
         }
@@ -475,12 +484,21 @@ public class UpfrontAllocatingPageSource implements PageSource {
    * allocated, we try to allocate two chunks of {@code maxChunk / 2}. If this allocation fails, we continue dividing until
    * we reach of size of {@code minChunk}. If at that moment, the allocation still fails, an {@code IllegalArgumentException}
    * is thrown.
+   * 分配多个缓冲区以满足请求的内存{@code to Allocate}。
+   * 我们首先将{@code toAllocate}划分为大小为{@code maxChunk}的块，并尝试在所有可用处理器上并行分配它们。
+   * 如果一个区块分配失败，我们将尝试分配两个{@code maxChunk/2}区块。
+   * 如果此分配失败，我们将继续分割，直到达到{@code minChunk}的大小。
+   * 如果此时分配仍然失败，则抛出{@code IllegalArgumentException}。
    * <p>
    * When {@code fixed} is requested, we will only allocated buffers of {@code maxChunk} size. If allocation fails, an
    * {@code IllegalArgumentException} is thrown without any division.
+   * 当请求{@code fixed}时，我们将只分配{@code maxChunk}大小的缓冲区。
+   * 如果分配失败，将抛出一个{@code IllegalArgumentException}，而不进行任何除法。
    * <p>
    * If the allocation is interrupted, the method will ignore it and continue allocation. It will then return with the
    * interrupt flag is set.
+   * 如果分配被中断，该方法将忽略它并继续分配。
+   * 然后在设置中断标志时返回。
    *
    * @param source source used to allocate memory buffers
    * @param toAllocate total amount of memory to allocate
@@ -493,10 +511,12 @@ public class UpfrontAllocatingPageSource implements PageSource {
     private static Collection<ByteBuffer> allocateBackingBuffers(final BufferSource source, long toAllocate, int maxChunk, final int minChunk, final boolean fixed) {
 
       final long start = (LOGGER.isDebugEnabled() ? System.nanoTime() : 0);
-
+      // yukms TODO: 创建分配日志
       final PrintStream allocatorLog = createAllocatorLog(toAllocate, maxChunk, minChunk);
 
-      final Collection<ByteBuffer> buffers = new ArrayList<>((int) (toAllocate / maxChunk + 10)); // guess the number of buffers and add some padding just in case
+      // guess the number of buffers and add some padding just in case
+      // yukms TODO: 猜测缓冲区的数量并添加一些填充，以防万一
+      final Collection<ByteBuffer> buffers = new ArrayList<>((int) (toAllocate / maxChunk + 10));
 
       try {
         if (allocatorLog != null) {
@@ -509,6 +529,7 @@ public class UpfrontAllocatingPageSource implements PageSource {
         try {
 
           for (long dispatched = 0; dispatched < toAllocate; ) {
+            // yukms TODO: 按照maxChunk分配
             final int currentChunkSize = (int)Math.min(maxChunk, toAllocate - dispatched);
             futures.add(executorService.submit(() -> bufferAllocation(source, currentChunkSize, minChunk, fixed, allocatorLog, start)));
             dispatched += currentChunkSize;
@@ -548,34 +569,43 @@ public class UpfrontAllocatingPageSource implements PageSource {
     }
 
   private static Collection<ByteBuffer> bufferAllocation(BufferSource source, int toAllocate, int minChunk, boolean fixed, PrintStream allocatorLog, long start) {
+    // yukms TODO: 已分配大小
     long allocated = 0;
+    // yukms TODO: 期望分配块大小
     long currentChunkSize = toAllocate;
 
     Collection<ByteBuffer> buffers = new ArrayList<>();
 
     while (allocated < toAllocate) {
+      // yukms TODO: 如果还没到期望分配大小则继续分配
       long blockStart = System.nanoTime();
       int currentAllocation = (int)Math.min(currentChunkSize, (toAllocate - allocated));
       ByteBuffer b = source.allocateBuffer(currentAllocation);
       long blockDuration = System.nanoTime() - blockStart;
 
       if (b == null) {
+        // yukms TODO: 分配失败
         if (fixed || (currentChunkSize >>> 1) < minChunk) {
+          // yukms TODO: 固定 || 分配大小小于最小块大小
           throw new IllegalArgumentException("An attempt was made to allocate more off-heap memory than the JVM can allow." +
                                              " The limit on off-heap memory size is given by the -XX:MaxDirectMemorySize command (or equivalent).");
         }
 
         // In case of failure, we try half the allocation size. It might pass if memory fragmentation caused the failure
+        // yukms TODO: 如果失败，我们尝试分配大小的一半。如果内存碎片导致了故障，则可能会通过
         currentChunkSize >>>= 1;
 
         if(LOGGER.isDebugEnabled()) {
           LOGGER.debug("Allocated failed at {}B, trying  {}B chunks.", DebuggingUtils.toBase2SuffixedString(currentAllocation), DebuggingUtils.toBase2SuffixedString(currentChunkSize));
         }
       } else {
+        // yukms TODO: 分配成功
         buffers.add(b);
+        // yukms TODO: 已分配大小
         allocated += currentAllocation;
 
         if (allocatorLog != null) {
+          // yukms TODO: 打印日志
           allocatorLog.printf("%d,%d,%d,%d,%d,%d,%d,%d%n", System.nanoTime() - start,
             Thread.currentThread().getId(),  blockDuration, currentAllocation, PhysicalMemory.freePhysicalMemory(), PhysicalMemory.totalSwapSpace(), PhysicalMemory.freeSwapSpace(), PhysicalMemory.ourCommittedVirtualMemory());
         }
@@ -615,16 +645,20 @@ public class UpfrontAllocatingPageSource implements PageSource {
   private static PrintStream createAllocatorLog(long max, int maxChunk, int minChunk) {
       String path = System.getProperty(ALLOCATION_LOG_LOCATION);
       if (path == null) {
+        // yukms TODO: 未配置分类日志路径
         return null;
       } else {
         PrintStream allocatorLogStream;
         try {
+          // yukms TODO: 创建临时文件
           File allocatorLogFile = File.createTempFile("allocation", ".csv", new File(path));
+          // yukms TODO: 包装为打印流
           allocatorLogStream = new PrintStream(allocatorLogFile, "US-ASCII");
         } catch (IOException e) {
           LOGGER.warn("Exception creating allocation log", e);
           return null;
         }
+        // yukms TODO: 基本日志
         allocatorLogStream.printf("Timestamp: %s%n", new Date());
         allocatorLogStream.printf("Allocating: %sB%n",DebuggingUtils.toBase2SuffixedString(max));
         allocatorLogStream.printf("Max Chunk: %sB%n",DebuggingUtils.toBase2SuffixedString(maxChunk));

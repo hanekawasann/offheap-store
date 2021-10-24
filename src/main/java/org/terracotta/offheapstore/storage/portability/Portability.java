@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2015 Terracotta, Inc., a Software AG company.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 
 /**
  * An object to ByteBuffer converter.
+ * ByteBuffer转换器的对象。
  *
  * @param <T> type handled by this converter
  *
@@ -28,6 +29,7 @@ public interface Portability<T> {
 
   /**
    * Encodes an object of type {@code T} as a {@code ByteBuffer}.
+   * 将{@code T}类型的对象编码为{@code ByteBuffer}。
    *
    * @param object object to be encoded
    * @return the encoded object
@@ -36,6 +38,7 @@ public interface Portability<T> {
 
   /**
    * Decodes a {@code ByteBuffer} to an object of type {@code T}.
+   * 将{@code ByteBuffer}解码为{@code T}类型的对象。
    *
    * @param buffer bytes to decode
    * @return the decoded object
@@ -45,6 +48,7 @@ public interface Portability<T> {
   /**
    * Returns true if the encoded object once decoded would be
    * {@code Object.equals(Object)} to the supplied object.
+   * 如果解码后的编码对象与提供的对象为{@code object.equals（object）}，则返回true。
    *
    * @param object object to compare to
    * @param buffer buffer containing encoded object

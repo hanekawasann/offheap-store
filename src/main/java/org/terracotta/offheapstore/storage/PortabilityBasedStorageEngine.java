@@ -36,6 +36,10 @@ public abstract class PortabilityBasedStorageEngine<K, V> extends AbstractListen
    * We might want to look in to supporting shrinking of the data areas, in case
    * our storage demands change (e.g. due to a change in key distribution, or
    * change in value types).
+   *
+   * 未来的设计思路：
+   *
+   * 我们可能希望考虑支持数据区域的缩小，以防存储需求发生变化（例如，由于密钥分布的变化或值类型的变化）。
    */
 
   protected final Portability<? super K> keyPortability;

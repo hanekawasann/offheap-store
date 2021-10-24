@@ -23,11 +23,15 @@ import static org.terracotta.offheapstore.util.Validation.validate;
 
 /**
  * An augmented AA tree allocator with unusual alignment/allocation properties.
+ * 具有特殊的对齐/分配属性的扩充AA树分配器。
  * <p>
  * This allocator allocates only power-of-two size chunks.  In addition these
  * chunks are then only allocated on alignment with their own size.  Hence a
  * chunk of 2<sup>n</sup> size can only be allocated to an address satisfying
  * a=2<sup>n</sup>x where x is an integer.
+ * 此分配器仅分配两个大小块的幂。
+ * 此外，这些块仅在与它们自己的大小对齐时分配。
+ * 因此，大小为2<sup>n<sup>的块只能分配给满足a=2<sup>n<sup>x的地址，其中x是整数。
  *
  * @author Chris Dennis
  */
@@ -39,12 +43,14 @@ public class PowerOfTwoAllocator extends AATreeSet<Region> {
   private final int size;
   /**
    * This is volatile because we read it without any locking through
+   * 这是不稳定的，因为我们读取它时没有任何锁定
    * {@link UpfrontAllocatingPageSource#getAllocatedSizeUnSync()}
    */
   private volatile int occupied;
 
   /**
    * Create a power-of-two allocator with the given initial 'free' size area.
+   * 创建具有给定初始“空闲”大小区域的二次幂分配器。
    *
    * @param size initial free size
    */
