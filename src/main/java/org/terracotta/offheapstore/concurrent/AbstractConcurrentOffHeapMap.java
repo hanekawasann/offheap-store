@@ -93,8 +93,8 @@ public abstract class AbstractConcurrentOffHeapMap<K, V> extends AbstractMap<K, 
       concurrency = MAX_SEGMENTS;
     }
 
-    // Find power-of-two sizes best matching arguments
-    // yukms TODO: 找到两个大小的最佳匹配参数的幂
+    // Find power-of-two sizes best matching arguments 找到两个大小的最佳匹配参数的幂
+    // yukms TODO: ConcurrentHashMap 1.7
     int sshift = 0;
     int ssize = 1;
     while (ssize < concurrency) {

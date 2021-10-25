@@ -29,10 +29,12 @@ import org.terracotta.offheapstore.storage.StorageEngine;
 
 /**
  * An abstract locked off-heap map.
+ * 抽象的锁定堆映射。
  * <p>
  * Subclasses must implement the {@code readLock()} and {@code writeLock()}
  * methods such that they return the correct locks under which read and write
  * operations must occur.
+ * 子类必须实现{@code readLock（）}和{@code writeLock（）}方法，以便返回正确的锁，在这些锁下必须执行读写操作。
  *
  * @param <K> the type of keys maintained by this map
  * @param <V> the type of mapped values

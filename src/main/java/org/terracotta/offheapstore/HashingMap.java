@@ -19,11 +19,13 @@ import java.util.Map;
 
 /**
  * Interface of all map implementations based on hash-coding.
+ * 基于哈希编码的所有映射实现的接口。
  */
 public interface HashingMap<K, V> extends Map<K, V> {
 
   /**
    * Remove all keys having a specific hashcode.
+   * 删除具有特定哈希代码的所有键。
    * @param keyHash the hashcode of the keys to be removed.
    * @return a {@link Map} containing the removed mappings.
    */

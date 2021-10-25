@@ -32,9 +32,11 @@ import java.nio.IntBuffer;
 
 /**
  * An abstract off-heap cache implementation.
+ * 抽象的堆外缓存实现。
  * <p>
  * Subclasses must implement the two {@code getEvictionIndex(...)} methods to
  * instruct the cache regarding which mappings to remove.
+ * 子类必须实现两个{@code getexecutionindex（…）}方法来指示缓存删除哪些映射。
  *
  * @param <K> the type of keys maintained by this map
  * @param <V> the type of mapped values

@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2015 Terracotta, Inc., a Software AG company.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,14 +23,19 @@ import org.terracotta.offheapstore.storage.StorageEngine;
 
 /**
  * A concurrent-read, exclusive-write off-heap clock cache.
+ * 一个并发读、排他写堆时钟缓存。
  * <p>
  * This cache uses one of the unused bits in the off-heap entry's status value to
  * store the clock data.  This clock data is racily to updated during read
  * operations. Since clock eviction data resides in the hash-map's table, it is
  * correctly copied across during table resize operations.
+ * 此缓存使用堆外条目状态值中的一个未使用位来存储时钟数据。
+ * 该时钟数据在读取操作期间快速更新。
+ * 由于时钟逐出数据驻留在哈希映射的表中，因此在调整表大小操作期间会正确地跨表复制时钟逐出数据。
  * <p>
  * The cache uses a regular {@code ReentrantReadWriteLock} to provide read/write
  * exclusion/sharing properties.
+ * 缓存使用常规的{@code ReentrantReadWriteLock}来提供读写共享属性。
  *
  * @param <K> the type of keys maintained by this map
  * @param <V> the type of mapped values
@@ -40,7 +45,7 @@ import org.terracotta.offheapstore.storage.StorageEngine;
 public class ReadWriteLockedOffHeapClockCache<K, V> extends AbstractOffHeapClockCache<K, V> {
 
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
-  
+
   public ReadWriteLockedOffHeapClockCache(PageSource source, StorageEngine<? super K, ? super V> storageEngine) {
     super(source, storageEngine);
   }
@@ -48,15 +53,15 @@ public class ReadWriteLockedOffHeapClockCache<K, V> extends AbstractOffHeapClock
   public ReadWriteLockedOffHeapClockCache(PageSource source, boolean tableAllocationsSteal, StorageEngine<? super K, ? super V> storageEngine) {
     super(source, tableAllocationsSteal, storageEngine);
   }
-  
+
   public ReadWriteLockedOffHeapClockCache(PageSource source, StorageEngine<? super K, ? super V> storageEngine, int tableSize) {
     super(source, storageEngine, tableSize);
   }
-  
+
   public ReadWriteLockedOffHeapClockCache(PageSource source, boolean tableAllocationsSteal, StorageEngine<? super K, ? super V> storageEngine, int tableSize) {
     super(source, tableAllocationsSteal, storageEngine, tableSize);
   }
-  
+
   @Override
   public Lock readLock() {
     return lock.readLock();
