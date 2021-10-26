@@ -99,6 +99,7 @@ public class UpfrontAllocatingPageSource implements PageSource {
      */
     private final List<NavigableSet<Page>> victims = new ArrayList<>();
 
+    // yukms TODO: 取反0，即所有都可用
     private volatile int availableSet = ~0;
 
     /**
@@ -181,12 +182,15 @@ public class UpfrontAllocatingPageSource implements PageSource {
 
     /**
      * Allocates a byte buffer of at least the given size.
+     * 分配至少具有给定大小的字节缓冲区。
      * <p>
      * This {@code BufferSource} is limited to allocating regions that are a power
      * of two in size.  Supplied sizes are therefore rounded up to the next
      * largest power of two.
+     * 此{@code BufferSource}仅限于分配大小为二次方的区域。
+     * 因此，所提供的尺寸被四舍五入到第二个最大的二次方。
      *
-     * @return a buffer of at least the given size
+     * @return a buffer of at least the given size 至少具有给定大小的缓冲区
      */
     @Override
     public Page allocate(int size, boolean thief, boolean victim, OffHeapStorageArea owner) {
@@ -310,13 +314,16 @@ public class UpfrontAllocatingPageSource implements PageSource {
     }
 
     private Page allocateFromFree(int size, boolean victim, OffHeapStorageArea owner) {
+        // yukms TODO: 重新计算分配大小
         if (Integer.bitCount(size) != 1) {
+            // yukms TODO: 不是2的幂次方，则计算出待遇size的最大2的幂次方
             int rounded = Integer.highestOneBit(size) << 1;
             LOGGER.debug("Request to allocate {}B will allocate {}B", size, DebuggingUtils.toBase2SuffixedString(rounded));
             size = rounded;
         }
 
         if (isUnavailable(size)) {
+          // yukms TODO: 不可用
             return null;
         }
 
