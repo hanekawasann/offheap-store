@@ -225,6 +225,7 @@ public class PowerOfTwoAllocator extends AATreeSet<Region> {
 
   /**
    * Find a region of the given size.
+   * 找到给定大小的区域。
    */
   private Region findRegion(int size, Packing packing) {
     validate(!VALIDATING || Integer.bitCount(size) == 1);
@@ -233,20 +234,27 @@ public class PowerOfTwoAllocator extends AATreeSet<Region> {
     Region currentRegion = currentNode.getPayload();
     if (currentRegion == null || (currentRegion.available() & size) == 0) {
       //no region big enough for us...
+      // yukms TODO: 没有足够大的区域容纳我们。。。
       return null;
     } else {
+      // yukms TODO: 有空间找
       while (true) {
+        // yukms TODO: prefered
         Node<Region> prefered = packing.prefered(currentNode);
         Region preferedRegion = prefered.getPayload();
         if (preferedRegion != null && (preferedRegion.available() & size) != 0) {
+          // yukms TODO: 有空间 && 可用，继续往下找
           currentNode = prefered;
           currentRegion = preferedRegion;
         } else if ((currentRegion.availableHere() & size) != 0) {
+          // yukms TODO: 当前空间是否可用
           return packing.slice(currentRegion, size);
         } else {
+          // yukms TODO: fallback
           Node<Region> fallback = packing.fallback(currentNode);
           Region fallbackRegion = fallback.getPayload();
           if (fallbackRegion != null && (fallbackRegion.available() & size) != 0) {
+            // yukms TODO: 有空间 && 可用，继续往下找
             currentNode = fallback;
             currentRegion = fallbackRegion;
           } else {
@@ -282,6 +290,7 @@ public class PowerOfTwoAllocator extends AATreeSet<Region> {
   }
 
   public enum Packing {
+    // yukms TODO: 地板，下舍位取整
     FLOOR {
 
       @Override
@@ -302,6 +311,7 @@ public class PowerOfTwoAllocator extends AATreeSet<Region> {
       }
     },
 
+    // yukms TODO: 天花板，上进位取整
     CEILING {
 
       @Override

@@ -329,8 +329,10 @@ public class UpfrontAllocatingPageSource implements PageSource {
 
         synchronized (this) {
             for (int i = 0; i < sliceAllocators.size(); i++) {
+              // yukms TODO: 逐个分配
                 int address = sliceAllocators.get(i).allocate(size, victim ? CEILING : FLOOR);
                 if (address >= 0) {
+                  // yukms TODO: 分配成功
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("Allocating a {}B buffer from chunk {} &{}", DebuggingUtils.toBase2SuffixedString(size), i, address);
                     }

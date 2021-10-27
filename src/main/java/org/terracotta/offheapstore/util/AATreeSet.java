@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.Stack;
 
+// yukms TODO: AA树
 public class AATreeSet<T extends Comparable<? super T>> extends AbstractSet<T> implements SortedSet<T> {
 
   private Node<T> root = TerminalNode.terminal();
@@ -162,15 +163,21 @@ public class AATreeSet<T extends Comparable<? super T>> extends AbstractSet<T> i
 
   private Node<T> insert(Node<T> top, T data) {
     if (top == TerminalNode.<T>terminal()) {
+      // yukms TODO: 如果top是空的Node
       mutated = true;
+      // yukms TODO: 创建新节点
       return createNode(data);
     } else {
+      // yukms TODO:
       int direction = top.getPayload().compareTo(data);
       if (direction > 0) {
+        // yukms TODO: 比top小，往左
         top.setLeft(insert(top.getLeft(), data));
       } else if (direction < 0) {
+        // yukms TODO: 比top大，往右
         top.setRight(insert(top.getRight(), data));
       } else {
+        // yukms TODO: 和top相等
         return top;
       }
       top = skew(top);
@@ -224,6 +231,7 @@ public class AATreeSet<T extends Comparable<? super T>> extends AbstractSet<T> i
     return top;
   }
 
+  // yukms TODO: 右旋转
   private static <T extends Comparable<? super T>> Node<T> skew(Node<T> top) {
     if (top.getLeft().getLevel() == top.getLevel() && top.getLevel() != 0) {
       Node<T> save = top.getLeft();
@@ -235,6 +243,7 @@ public class AATreeSet<T extends Comparable<? super T>> extends AbstractSet<T> i
     return top;
   }
 
+  // yukms TODO: 左旋转
   private static <T extends Comparable<? super T>> Node<T> split(Node<T> top) {
     if (top.getRight().getRight().getLevel() == top.getLevel() && top.getLevel() != 0) {
       Node<T> save = top.getRight();

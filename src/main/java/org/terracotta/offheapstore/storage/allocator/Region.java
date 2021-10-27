@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2015 Terracotta, Inc., a Software AG company.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +20,7 @@ import org.terracotta.offheapstore.util.AATreeSet.Node;
 
 /**
  * Class that represents the regions held within this set.
+ * 类，该类表示此集合中保留的区域。
  */
 class Region extends AbstractTreeNode<Region> implements Comparable<Comparable<?>> {
 
@@ -42,8 +43,10 @@ class Region extends AbstractTreeNode<Region> implements Comparable<Comparable<?
 
   /**
    * Create a shallow copy of a region.
+   * 创建区域的浅层副本。
    * <p>
    * The new Region has NULL left and right children.
+   * 新区域的左、右子项为空。
    */
   Region(Region r) {
     this(r.start(), r.end());
@@ -112,7 +115,7 @@ class Region extends AbstractTreeNode<Region> implements Comparable<Comparable<?
   protected boolean isNull() {
     return this.start > this.end;
   }
-  
+
   int treeSize() {
     int treeSize = size();
     Region left = getLeft().getPayload();
@@ -180,10 +183,13 @@ class Region extends AbstractTreeNode<Region> implements Comparable<Comparable<?
     if (other instanceof Region) {
       Region r = (Region) other;
       if (this.start < r.start) {
+        // yukms TODO: 小于
         return -1;
       } else if (this.end > r.end) {
+        // yukms TODO: 大于
         return 1;
       } else {
+        // yukms TODO: 相等
         return 0;
       }
     } else if (other instanceof Integer) {
@@ -209,17 +215,17 @@ class Region extends AbstractTreeNode<Region> implements Comparable<Comparable<?
       throw new AssertionError();
     }
   }
-  
+
   @Override
   public int hashCode() {
     return (3 * this.start) ^ (7 * this.end);
   }
-  
+
   @Override
   public Region getPayload() {
     return this;
   }
-  
+
   @Override
   public void swapPayload(Node<Region> other) {
     if (other instanceof Region) {
