@@ -17,7 +17,11 @@ public class RegionTest {
 
   @Test
   public void test_02() {
-
+    // yukms TODO: 1 2 4 8 16 32 64 128
+    int size = 32;
+    int mask = size - 1;
+    int start = 128;
+    System.out.println((start + mask) & ~mask);
   }
 
   int availableHere(int start, int end) {
@@ -25,21 +29,13 @@ public class RegionTest {
 
     for (int i = 0; i < Integer.SIZE - 1; i++) {
       int size = 1 << i;
-      System.out.print(Integer.toBinaryString(size));
-      System.out.print("\t");
       int mask = size - 1;
-      System.out.print(Integer.toBinaryString(mask));
-      System.out.print("\t");
 
       int a = (start + mask) & ~mask;
-      System.out.print(Integer.toBinaryString(a));
-      System.out.print("\t");
 
       if ((end - a + 1) >= size) {
         bits |= size;
       }
-      System.out.print(Integer.toBinaryString(bits));
-      System.out.println();
     }
     return bits;
   }

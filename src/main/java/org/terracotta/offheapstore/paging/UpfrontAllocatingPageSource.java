@@ -195,6 +195,7 @@ public class UpfrontAllocatingPageSource implements PageSource {
     @Override
     public Page allocate(int size, boolean thief, boolean victim, OffHeapStorageArea owner) {
       if (thief) {
+        // yukms TODO: 这里
         return allocateAsThief(size, victim, owner);
       } else {
         return allocateFromFree(size, victim, owner);
@@ -328,19 +329,23 @@ public class UpfrontAllocatingPageSource implements PageSource {
         }
 
         synchronized (this) {
-            for (int i = 0; i < sliceAllocators.size(); i++) {
-              // yukms TODO: 逐个分配
+          // yukms TODO: 逐个分配
+          for (int i = 0; i < sliceAllocators.size(); i++) {
+                // yukms TODO: 返回分配的地址
                 int address = sliceAllocators.get(i).allocate(size, victim ? CEILING : FLOOR);
                 if (address >= 0) {
                   // yukms TODO: 分配成功
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("Allocating a {}B buffer from chunk {} &{}", DebuggingUtils.toBase2SuffixedString(size), i, address);
                     }
+                    // yukms TODO: 生成新的ByteBuffer
                     ByteBuffer b = ((ByteBuffer) buffers.get(i).limit(address + size).position(address)).slice();
+                    // yukms TODO: 生成Page
                     Page p = new Page(b, i, address, owner);
                     if (victim) {
                       victims.get(i).add(p);
                     } else {
+                      // yukms TODO: 这里
                       victimAllocators.get(i).claim(address, size);
                     }
                     if (!risingThresholds.isEmpty()) {

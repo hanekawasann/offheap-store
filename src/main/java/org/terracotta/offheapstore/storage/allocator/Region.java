@@ -106,9 +106,11 @@ class Region extends AbstractTreeNode<Region> implements Comparable<Comparable<?
 
   /**
    * Returns the size of this range (the number of values within its bounds).
+   * 返回此范围的大小（其范围内的值数）。
    */
   public int size() {
     // since it is all inclusive
+    // yukms TODO: 因为它包罗万象
     return isNull() ? 0 : this.end - this.start + 1;
   }
 
@@ -127,20 +129,26 @@ class Region extends AbstractTreeNode<Region> implements Comparable<Comparable<?
 
   public Region remove(Region r) {
     if (r.start < this.start || r.end > this.end) {
+      // yukms TODO: 超出范围
       throw new AssertionError("Ranges : Illegal value passed to remove : " + this + " remove called for : " + r);
     }
     if (this.start == r.start) {
+      // yukms TODO: start相同
       this.start = r.end + 1;
       updateAvailable();
       return null;
     } else if (this.end == r.end) {
+      // yukms TODO: end相同
       this.end = r.start - 1;
       updateAvailable();
       return null;
     } else {
+      // yukms TODO: 插在中间，生成后面空的区域
       Region newRegion = new Region(r.end + 1, this.end);
+      // yukms TODO: 前面空的保留
       this.end = r.start - 1;
       updateAvailable();
+      // yukms TODO: 新生成的区域返回
       return newRegion;
     }
   }
@@ -195,10 +203,13 @@ class Region extends AbstractTreeNode<Region> implements Comparable<Comparable<?
     } else if (other instanceof Integer) {
       Integer l = (Integer) other;
       if (l > end) {
+        // yukms TODO: end)
           return -1;
       } else if (l < start) {
+        // yukms TODO: (start
           return 1;
       } else {
+        // yukms TODO: [start, end]
           return 0;
       }
     } else {
@@ -244,6 +255,7 @@ class Region extends AbstractTreeNode<Region> implements Comparable<Comparable<?
 
   /**
    * Returns the start of this range (inclusive).
+   * 返回此范围的起始值（包括）。
    */
   public int start() {
     return start;

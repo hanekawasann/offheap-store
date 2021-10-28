@@ -62,24 +62,33 @@ public class PowerOfTwoAllocator extends AATreeSet<Region> {
 
   public int allocate(int size, Packing packing) {
     if (Integer.bitCount(size) != 1) {
+      // yukms TODO: 不是2的幂次方
       throw new AssertionError("Size " + size + " is not a power of two");
     }
 
+    // yukms TODO: 找到分类区域
     final Region r = findRegion(size, packing);
     if (r == null) {
+      // yukms TODO: 找到了
       return -1;
     }
+    // yukms TODO: 找到地址对应的区域
     Region current = removeAndReturn(r.start());
+    // yukms TODO: 移除占用的大小
     Region newRange = current.remove(r);
     if (newRange != null) {
+      // yukms TODO: 生成了新区域
       insert(current);
       insert(newRange);
     } else if (!current.isNull()) {
+      // yukms TODO: 未生成新区域 && 分配的区域还有空间
       insert(current);
     }
+    // yukms TODO: 更新以分配的大小
     occupied += r.size();
     validateFreeSpace();
 
+    // yukms TODO: 返回开始地址
     return r.start();
   }
 
@@ -135,6 +144,7 @@ public class PowerOfTwoAllocator extends AATreeSet<Region> {
   public Region removeAndReturn(Object o) {
       Region r = super.removeAndReturn(o);
       if (r != null) {
+        // yukms TODO: 移除成功
         return new Region(r);
       } else {
         return null;
@@ -243,11 +253,13 @@ public class PowerOfTwoAllocator extends AATreeSet<Region> {
         Node<Region> prefered = packing.prefered(currentNode);
         Region preferedRegion = prefered.getPayload();
         if (preferedRegion != null && (preferedRegion.available() & size) != 0) {
-          // yukms TODO: 有空间 && 可用，继续往下找
+          // yukms TODO: 有空间 && 可用
+          // yukms TODO: 继续往下找
           currentNode = prefered;
           currentRegion = preferedRegion;
         } else if ((currentRegion.availableHere() & size) != 0) {
-          // yukms TODO: 当前空间是否可用
+          // yukms TODO: 没有空间了 && 当前空间是否可用
+          // yukms TODO:
           return packing.slice(currentRegion, size);
         } else {
           // yukms TODO: fallback

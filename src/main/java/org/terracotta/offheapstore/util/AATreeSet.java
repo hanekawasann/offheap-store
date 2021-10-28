@@ -197,21 +197,27 @@ public class AATreeSet<T extends Comparable<? super T>> extends AbstractSet<T> i
 
   private Node<T> remove(Node<T> top, T data) {
     if (top != TerminalNode.<T>terminal()) {
+      // yukms TODO: top不为空
       int direction = top.getPayload().compareTo(data);
 
       heir = top;
       if (direction > 0) {
+        // yukms TODO: (start，向左
         top.setLeft(remove(top.getLeft(), data));
       } else {
         item = top;
+        // yukms TODO: 向右
         top.setRight(remove(top.getRight(), data));
       }
 
       if (top == heir) {
         if (item != TerminalNode.<T>terminal() && item.getPayload().compareTo(data) == 0) {
           mutated = true;
+          // yukms TODO: 交换区域
           item.swapPayload(top);
+          // yukms TODO: 移除的
           removed = top.getPayload();
+          // yukms TODO: top替换为getRight()
           top = top.getRight();
         }
       } else {
