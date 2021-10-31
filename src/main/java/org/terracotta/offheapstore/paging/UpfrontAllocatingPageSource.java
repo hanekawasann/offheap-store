@@ -206,10 +206,13 @@ public class UpfrontAllocatingPageSource implements PageSource {
       Page free = allocateFromFree(size, victim, owner);
 
       if (free != null) {
+        // yukms TODO: 分配成功
         return free;
       }
 
+      // yukms TODO: 分配失败
       //do thieving here...
+      // yukms TODO: 在这里偷盗。。。
       PowerOfTwoAllocator victimAllocator = null;
       PowerOfTwoAllocator sliceAllocator = null;
       List<Page> targets = Collections.emptyList();
@@ -217,19 +220,24 @@ public class UpfrontAllocatingPageSource implements PageSource {
       Map<OffHeapStorageArea, Collection<Page>> releases = new IdentityHashMap<>();
 
       synchronized (this) {
+        // yukms TODO: 注意是victimAllocators
         for (int i = 0; i < victimAllocators.size(); i++) {
+          // yukms TODO: 分配
           int address = victimAllocators.get(i).find(size, victim ? CEILING : FLOOR);
           if (address >= 0) {
+            // yukms TODO: 分配成功
             victimAllocator = victimAllocators.get(i);
             sliceAllocator = sliceAllocators.get(i);
             targets = findVictimPages(i, address, size);
 
             //need to claim everything that falls within the range of our allocation
+            // yukms TODO: 需要申请我们分配范围内的所有物品
             int claimAddress = address;
             for (Page p : targets) {
               victimAllocator.claim(p.address(), p.size());
               int claimSize = p.address() - claimAddress;
               if (claimSize > 0) {
+                // yukms TODO: 可能分配
                 tempHolds.add(new AllocatedRegion(claimAddress, claimSize));
                 sliceAllocator.claim(claimAddress, claimSize);
                 victimAllocator.claim(claimAddress, claimSize);
@@ -242,6 +250,7 @@ public class UpfrontAllocatingPageSource implements PageSource {
               sliceAllocator.claim(claimAddress, claimSize);
               victimAllocator.claim(claimAddress, claimSize);
             }
+            // yukms TODO: 跳出
             break;
           }
         }
@@ -338,24 +347,30 @@ public class UpfrontAllocatingPageSource implements PageSource {
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("Allocating a {}B buffer from chunk {} &{}", DebuggingUtils.toBase2SuffixedString(size), i, address);
                     }
-                    // yukms TODO: 生成新的ByteBuffer
+                    // yukms TODO: 实际分配
                     ByteBuffer b = ((ByteBuffer) buffers.get(i).limit(address + size).position(address)).slice();
                     // yukms TODO: 生成Page
                     Page p = new Page(b, i, address, owner);
+                  // yukms TODO: victim代表什么意思？？？
                     if (victim) {
                       victims.get(i).add(p);
                     } else {
-                      // yukms TODO: 这里
+                      // yukms TODO: 这里复制了一份和sliceAllocators一模一样的数据
                       victimAllocators.get(i).claim(address, size);
                     }
                     if (!risingThresholds.isEmpty()) {
+                      // yukms TODO: 已分配大小
                       long allocated = getAllocatedSize();
+                      // yukms TODO: 通知
                       fireThresholds(allocated - size, allocated);
                     }
+                    // yukms TODO: 分配成功
                     return p;
                 }
             }
+            // yukms TODO: 标记该大小无法分配
             markUnavailable(size);
+          // yukms TODO: 分配失败
             return null;
         }
     }
@@ -427,10 +442,13 @@ public class UpfrontAllocatingPageSource implements PageSource {
     private synchronized void fireThresholds(long incoming, long outgoing) {
       Collection<Runnable> thresholds;
       if (outgoing > incoming) {
+        // yukms TODO: 分配
         thresholds = risingThresholds.subMap(incoming, outgoing).values();
       } else if (outgoing < incoming) {
+        // yukms TODO: 释放
         thresholds = fallingThresholds.subMap(outgoing, incoming).values();
       } else {
+        // yukms TODO: 其他
         thresholds = Collections.emptyList();
       }
 
@@ -445,11 +463,14 @@ public class UpfrontAllocatingPageSource implements PageSource {
 
     /**
      * Adds an allocation threshold action.
+     * 添加分配阈值操作。
      * <p>
      * There can be only a single action associated with each unique direction
      * and threshold combination.  If an action is already associated with the
      * supplied combination then the action is replaced by the new action and the
      * old action is returned.
+     * 这里只能有与每个唯一方向和阈值组合相关联的单个动作。
+     * 如果某个操作已与提供的组合相关联，则该操作将被新操作替换，并返回旧操作。
      * <p>
      * Actions are fired on passing through the supplied threshold and are called
      * synchronously with the triggering allocation.  This means care must be taken
@@ -457,6 +478,9 @@ public class UpfrontAllocatingPageSource implements PageSource {
      * otherwise deadlocks may result.  Exceptions thrown by the action will be
      * caught and logged by the page source and will not be propagated on the
      * allocating thread.
+     * 操作在通过提供的阈值时触发，并与触发分配同步调用。
+     * 这意味着必须注意避免在操作中更改使用此页面源的任何映射，否则可能导致死锁。
+     * 操作引发的异常将被页面源捕获并记录，并且不会在分配线程上传播。
      *
      * @param direction new actions direction
      * @param threshold new actions threshold level

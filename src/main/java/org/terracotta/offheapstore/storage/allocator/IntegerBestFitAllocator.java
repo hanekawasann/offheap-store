@@ -110,17 +110,20 @@ public final class IntegerBestFitAllocator implements Allocator {
 
   /**
    * Create a best fit allocator backed by the given OffHeapStorageArea.
+   * 创建一个由给定的OffHeapStorageArea支持的最佳分配器。
    *
    * @param storage source of ByteBuffer instances
    */
   public IntegerBestFitAllocator(OffHeapStorageArea storage) {
     this.storage = storage;
+    // yukms TODO: 这是clear什么？？？
     clear();
   }
 
   @Override
   public void clear() {
     //initialize state
+    // yukms TODO: 初始化状态
     top = 0;
     topSize = -TOP_FOOT_SIZE;
     //head(top, topSize | PINUSE_BIT);
@@ -187,25 +190,23 @@ public final class IntegerBestFitAllocator implements Allocator {
 
   private int dlmalloc(int bytes) {
     /*
+     * https://blog.csdn.net/weixin_42260270/article/details/108129653
      * Basic algorithm:
+     * 基本算法：
      * If a small request (< 256 bytes minus per-chunk overhead):
-     *   1. If one exists, use a remainderless chunk in associated smallbin.
-     *      (Remainderless means that there are too few excess bytes to
-     *      represent as a chunk.)
-     *   2. If it is big enough, use the dv chunk, which is normally the
-     *      chunk adjacent to the one used for the most recent small request.
-     *   3. If one exists, split the smallest available chunk in a bin,
-     *      saving remainder in dv.
+     * 如果一个小请求（<256字节减去每个区块的开销）：
+     *   1. If one exists, use a remainderless chunk in associated smallbin. (Remainderless means that there are too few excess bytes to represent as a chunk.)
+     *   1.如果存在，请在关联的smallbin中使用无剩余块。（Remainderless表示多余字节太少，无法表示为块。）
+     *   2. If it is big enough, use the dv chunk, which is normally the chunk adjacent to the one used for the most recent small request.
+     *   3. If one exists, split the smallest available chunk in a bin, saving remainder in dv.
      *   4. If it is big enough, use the top chunk.
      *   5. If available, get memory from system and use it
      * Otherwise, for a large request:
-     *   1. Find the smallest available binned chunk that fits, and use it
-     *      if it is better fitting than dv chunk, splitting if necessary.
+     *   1. Find the smallest available binned chunk that fits, and use it if it is better fitting than dv chunk, splitting if necessary.
      *   2. If better fitting than any binned chunk, use the dv chunk.
      *   3. If it is big enough, use the top chunk.
      *   4. If request size >= mmap threshold, try to directly mmap this chunk.
      *   5. If available, get memory from system and use it
-     *
      */
 
     int nb = (bytes < MIN_REQUEST) ? MIN_CHUNK_SIZE : padRequest(bytes); //internal request size;

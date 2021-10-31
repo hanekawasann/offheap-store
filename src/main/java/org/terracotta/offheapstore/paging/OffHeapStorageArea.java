@@ -554,10 +554,12 @@ public class OffHeapStorageArea {
     /*
      * TODO This locking might be too coarse grained - can we safely allow
      * threads in to the map while we do this release process?
+     * 此锁定可能过于粗粒度-在执行此发布过程时，我们是否可以安全地允许线程进入映射？
      */
     final Lock ownerLock = owner.writeLock();
     if (thief || owner.isThief()) {
       if (!ownerLock.tryLock()) {
+        // yukms TODO: 尝试加锁失败
         return Collections.emptyList();
       }
     } else {
@@ -568,10 +570,13 @@ public class OffHeapStorageArea {
       Collection<Page> freed = new LinkedList<>();
       /*
        * iterate backwards from top, and free until top is beneath tail page.
+       * 从顶部向后迭代，直到顶部位于尾页下方。
        */
       while (freed.size() < targets.size()) {
+        // yukms TODO: 获取最后使用的指针
         long remove = allocator.getLastUsedPointer();
         if (remove < 0) {
+          // yukms TODO: 没有最后使用的指针
           for (int i = pages.size() - 1; i >= 0; i--) {
             Page free = pages.get(i);
             allocator.expand(-free.size());
@@ -704,9 +709,11 @@ public class OffHeapStorageArea {
         return false;
       } else {
         int initialSize = pages.size();
+        // yukms TODO: 释放Page
         for (Page p : release(new LinkedList<>(Collections.singletonList(pages.get(pages.size() - 1))))) {
           freePage(p);
         }
+        // yukms TODO: 收缩成功
         return pages.size() < initialSize;
       }
     } finally {

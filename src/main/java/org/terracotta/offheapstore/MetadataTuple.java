@@ -18,6 +18,7 @@ package org.terracotta.offheapstore;
 public final class MetadataTuple<V> {
 
   private final V value;
+  // yukms TODO: 标志位
   private final int metadata;
 
   private MetadataTuple(V value, int metadata) {

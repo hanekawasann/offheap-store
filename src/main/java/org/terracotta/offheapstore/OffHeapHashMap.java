@@ -30,9 +30,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import static org.terracotta.offheapstore.MetadataTuple.metadataTuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.terracotta.offheapstore.buffersource.BufferSource;
 import org.terracotta.offheapstore.exceptions.OversizeMappingException;
 import org.terracotta.offheapstore.paging.Page;
@@ -43,8 +43,6 @@ import org.terracotta.offheapstore.util.DebuggingUtils;
 import org.terracotta.offheapstore.util.FindbugsSuppressWarnings;
 import org.terracotta.offheapstore.util.NoOpLock;
 import org.terracotta.offheapstore.util.WeakIdentityHashMap;
-
-import static org.terracotta.offheapstore.MetadataTuple.metadataTuple;
 
 /**
  * A hash-table implementation whose table is stored in an NIO direct buffer.
@@ -69,10 +67,10 @@ import static org.terracotta.offheapstore.MetadataTuple.metadataTuple;
  *
  * @param <K> the type of keys maintained by this map
  * @param <V> the type of mapped values
- *
  * @author Chris Dennis
  */
-public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapInternals, StorageEngine.Owner, HashingMap<K, V> {
+public class OffHeapHashMap<K, V> extends AbstractMap<K, V>
+  implements MapInternals, StorageEngine.Owner, HashingMap<K, V> {
 
   /*
    * Future design ideas:
@@ -101,11 +99,16 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
   protected static final int ENTRY_SIZE = 4;
   protected static final int ENTRY_BIT_SHIFT = Integer.numberOfTrailingZeros(ENTRY_SIZE);
 
+  // yukms TODO: index=0，状态
   protected static final int STATUS = 0;
+  // yukms TODO: index=0，key的hashcode
   protected static final int KEY_HASHCODE = 1;
+  // yukms TODO: index=0，编码
   protected static final int ENCODING = 2;
 
+  // yukms TODO: 状态：已使用
   protected static final int STATUS_USED = 1;
+  // yukms TODO: 状态：已移除
   protected static final int STATUS_REMOVED = 2;
   public static final int RESERVED_STATUS_BITS = STATUS_USED | STATUS_REMOVED;
 
@@ -113,7 +116,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
 
   protected final PageSource tableSource;
 
-  private final WeakIdentityHashMap<IntBuffer, PendingPage> pendingTableFrees = new WeakIdentityHashMap<>(pending -> freeTable(pending.tablePage));
+  private final WeakIdentityHashMap<IntBuffer, PendingPage> pendingTableFrees = new WeakIdentityHashMap<>(
+    pending -> freeTable(pending.tablePage));
 
   private final int initialTableSize;
 
@@ -160,14 +164,15 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
    * Construct an instance using a custom {@link BufferSource} for the
    * hashtable.
    *
-   * @param source source for the hashtable allocations
+   * @param source        source for the hashtable allocations
    * @param storageEngine engine used to encode the keys and values
    */
   public OffHeapHashMap(PageSource source, StorageEngine<? super K, ? super V> storageEngine) {
     this(source, storageEngine, INITIAL_TABLE_SIZE);
   }
 
-  public OffHeapHashMap(PageSource source, boolean tableAllocationsSteal, StorageEngine<? super K, ? super V> storageEngine) {
+  public OffHeapHashMap(PageSource source, boolean tableAllocationsSteal,
+    StorageEngine<? super K, ? super V> storageEngine) {
     this(source, tableAllocationsSteal, storageEngine, INITIAL_TABLE_SIZE);
   }
 
@@ -179,20 +184,22 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
    * Construct an instance using a custom {@link BufferSource} for the
    * hashtable and a custom initial table size.
    *
-   * @param source source for the hashtable allocations
+   * @param source        source for the hashtable allocations
    * @param storageEngine engine used to encode the keys and values
-   * @param tableSize the initial table size
+   * @param tableSize     the initial table size
    */
   public OffHeapHashMap(PageSource source, StorageEngine<? super K, ? super V> storageEngine, int tableSize) {
     this(source, false, storageEngine, tableSize, true);
   }
 
-  public OffHeapHashMap(PageSource source, boolean tableAllocationsSteal, StorageEngine<? super K, ? super V> storageEngine, int tableSize) {
+  public OffHeapHashMap(PageSource source, boolean tableAllocationsSteal,
+    StorageEngine<? super K, ? super V> storageEngine, int tableSize) {
     this(source, tableAllocationsSteal, storageEngine, tableSize, true);
   }
 
   @FindbugsSuppressWarnings("ICAST_INTEGER_MULTIPLY_CAST_TO_LONG")
-  protected OffHeapHashMap(PageSource source, boolean tableAllocationsSteal, StorageEngine<? super K, ? super V> storageEngine, int tableSize, boolean bootstrap) {
+  protected OffHeapHashMap(PageSource source, boolean tableAllocationsSteal,
+    StorageEngine<? super K, ? super V> storageEngine, int tableSize, boolean bootstrap) {
     if (storageEngine == null) {
       throw new NullPointerException("StorageEngine implementation must be non-null");
     }
@@ -204,7 +211,7 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
     // Find a power of 2 >= initialCapacity
     int capacity = 1;
     while (capacity < tableSize) {
-        capacity <<= 1;
+      capacity <<= 1;
     }
     this.initialTableSize = capacity;
 
@@ -212,8 +219,9 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
       this.hashTablePage = allocateTable(initialTableSize);
       if (hashTablePage == null) {
         String msg = "Initial table allocation failed.\n" + "Initial Table Size (slots) : " + initialTableSize + '\n' +
-                    "Allocation Will Require    : " + DebuggingUtils.toBase2SuffixedString(initialTableSize * ENTRY_SIZE * (Integer.SIZE / Byte.SIZE)) + "B\n" +
-                    "Table Page Source        : " + tableSource;
+          "Allocation Will Require    : " +
+          DebuggingUtils.toBase2SuffixedString(initialTableSize * ENTRY_SIZE * (Integer.SIZE / Byte.SIZE)) + "B\n" +
+          "Table Page Source        : " + tableSource;
         throw new IllegalArgumentException(msg);
       }
       hashtable = hashTablePage.asIntBuffer();
@@ -308,7 +316,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
 
       if (isTerminating(entry)) {
         return null;
-      } else if (isPresent(entry) && binaryKeyEquals(binaryKey, hash, readLong(entry, ENCODING), entry.get(KEY_HASHCODE))) {
+      } else if (isPresent(entry) &&
+        binaryKeyEquals(binaryKey, hash, readLong(entry, ENCODING), entry.get(KEY_HASHCODE))) {
         return readLong(entry, ENCODING);
       } else {
         view.position(view.position() + ENTRY_SIZE);
@@ -319,7 +328,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
 
   @Override
   @FindbugsSuppressWarnings("VO_VOLATILE_INCREMENT")
-  public long installMappingForHashAndEncoding(int pojoHash, ByteBuffer offheapBinaryKey, ByteBuffer offheapBinaryValue, int metadata) {
+  public long installMappingForHashAndEncoding(int pojoHash, ByteBuffer offheapBinaryKey, ByteBuffer offheapBinaryValue,
+    int metadata) {
     freePendingTables();
 
     int[] newEntry = installEntry(offheapBinaryKey, pojoHash, offheapBinaryValue, metadata);
@@ -350,7 +360,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
       }
     }
 
-    storageEngine.freeMapping(readLong(newEntry, ENCODING), newEntry[KEY_HASHCODE], false); //XXX: further contemplate the boolean value here
+    storageEngine.freeMapping(readLong(newEntry, ENCODING), newEntry[KEY_HASHCODE],
+      false); //XXX: further contemplate the boolean value here
 
     // hit reprobe limit - must rehash
     expand(start, limit);
@@ -491,7 +502,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
         for (IntBuffer laterEntry = entry; i < limit; i++) {
           if (isTerminating(laterEntry)) {
             break;
-          } else if (isPresent(laterEntry) && keyEquals(key, hash, readLong(laterEntry, ENCODING), laterEntry.get(KEY_HASHCODE))) {
+          } else if (isPresent(laterEntry) &&
+            keyEquals(key, hash, readLong(laterEntry, ENCODING), laterEntry.get(KEY_HASHCODE))) {
             V old = (V) storageEngine.readValue(readLong(laterEntry, ENCODING));
             storageEngine.freeMapping(readLong(laterEntry, ENCODING), laterEntry.get(KEY_HASHCODE), false);
             long oldEncoding = readLong(laterEntry, ENCODING);
@@ -532,7 +544,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
       }
     }
 
-    storageEngine.freeMapping(readLong(newEntry, ENCODING), newEntry[KEY_HASHCODE], false); //XXX: further contemplate the boolean value here
+    storageEngine.freeMapping(readLong(newEntry, ENCODING), newEntry[KEY_HASHCODE],
+      false); //XXX: further contemplate the boolean value here
 
     // hit reprobe limit - must rehash
     expand(start, limit);
@@ -547,11 +560,11 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
    * the key, the old value is replaced by the specified value even if this
    * results in a failure or eviction.
    *
-   * @param key key with which the specified value is to be associated
+   * @param key   key with which the specified value is to be associated
    * @param value value to be associated with the specified key
    * @return the previous value associated with <var>key</var>, or
-   *         <var>null</var> if there was no mapping for <var>key</var>
-   *         (irrespective of whether the value was successfully installed).
+   * <var>null</var> if there was no mapping for <var>key</var>
+   * (irrespective of whether the value was successfully installed).
    */
   public V fill(K key, V value) {
     return fill(key, value, 0);
@@ -579,7 +592,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
         for (IntBuffer laterEntry = entry; i < limit; i++) {
           if (isTerminating(laterEntry)) {
             break;
-          } else if (isPresent(laterEntry) && keyEquals(key, hash, readLong(laterEntry, ENCODING), laterEntry.get(KEY_HASHCODE))) {
+          } else if (isPresent(laterEntry) &&
+            keyEquals(key, hash, readLong(laterEntry, ENCODING), laterEntry.get(KEY_HASHCODE))) {
             return put(key, value, metadata);
           } else {
             hashtable.position(hashtable.position() + ENTRY_SIZE);
@@ -638,7 +652,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
         for (IntBuffer laterEntry = entry; i < limit; i++) {
           if (isTerminating(laterEntry)) {
             break;
-          } else if (isPresent(laterEntry) && keyEquals(key, hash, readLong(laterEntry, ENCODING), laterEntry.get(KEY_HASHCODE))) {
+          } else if (isPresent(laterEntry) &&
+            keyEquals(key, hash, readLong(laterEntry, ENCODING), laterEntry.get(KEY_HASHCODE))) {
             V old = (V) storageEngine.readValue(readLong(laterEntry, ENCODING));
             storageEngine.freeMapping(readLong(laterEntry, ENCODING), laterEntry.get(KEY_HASHCODE), false);
             long oldEncoding = readLong(laterEntry, ENCODING);
@@ -689,6 +704,7 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
      * TODO If we start supporting remapping (compaction) then we'll need to
      * worry about correcting the key representation here if the value write
      * triggers a remapping operation.
+     * 如果我们开始支持重新映射（压缩），那么如果值写入触发了重新映射操作，我们就需要担心在这里更正键表示。
      */
     while (true) {
       int[] entry = tryWriteEntry(key, hash, value, metadata);
@@ -711,16 +727,18 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
       if (encoding == null) {
         return null;
       } else {
+        // yukms TODO: 分配成功
         return createEntry(hash, encoding, metadata);
       }
     } else {
-      throw new IllegalArgumentException("Invalid metadata for key '" + key + "' : " + Integer.toBinaryString(metadata));
+      throw new IllegalArgumentException(
+        "Invalid metadata for key '" + key + "' : " + Integer.toBinaryString(metadata));
     }
   }
 
   private int[] installEntry(ByteBuffer offheapBinaryKey, int pojoHash, ByteBuffer offheapBinaryValue, int metadata) {
     while (true) {
-      int [] entry = tryInstallEntry(offheapBinaryKey, pojoHash, offheapBinaryValue, metadata);
+      int[] entry = tryInstallEntry(offheapBinaryKey, pojoHash, offheapBinaryValue, metadata);
       if (entry == null) {
         storageEngineFailure("<binary-key>");
       } else {
@@ -730,13 +748,15 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
   }
 
   @FindbugsSuppressWarnings("PZLA_PREFER_ZERO_LENGTH_ARRAYS")
-  private int[] tryInstallEntry(ByteBuffer offheapBinaryKey, int pojoHash, ByteBuffer offheapBinaryValue, int metadata) {
+  private int[] tryInstallEntry(ByteBuffer offheapBinaryKey, int pojoHash, ByteBuffer offheapBinaryValue,
+    int metadata) {
     if (hashtable == null) {
       throw new NullPointerException();
     } else if (hashtable == DESTROYED_TABLE) {
       throw new IllegalStateException("Offheap map/cache has been destroyed");
     } else if ((metadata & RESERVED_STATUS_BITS) == 0) {
-      Long encoding = ((BinaryStorageEngine) storageEngine).writeBinaryMapping(offheapBinaryKey, offheapBinaryValue, pojoHash, metadata);
+      Long encoding = ((BinaryStorageEngine) storageEngine).writeBinaryMapping(offheapBinaryKey, offheapBinaryValue,
+        pojoHash, metadata);
       if (encoding == null) {
         return null;
       } else {
@@ -922,7 +942,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
     removedSlots = 0;
     size = 0;
     freeTable(hashTablePage);
-    for (Iterator<PendingPage> it = pendingTableFrees.values(); it.hasNext(); freeTable(it.next().tablePage));
+    for (Iterator<PendingPage> it = pendingTableFrees.values(); it.hasNext(); freeTable(it.next().tablePage))
+      ;
     hashTablePage = null;
     hashtable = DESTROYED_TABLE;
     storageEngine.destroy();
@@ -983,10 +1004,12 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
   }
 
   protected static boolean isPresent(IntBuffer entry) {
+    // yukms TODO: 被使用
     return (entry.get(STATUS) & STATUS_USED) != 0;
   }
 
   protected static boolean isAvailable(IntBuffer entry) {
+    // yukms TODO: 没有被使用
     return (entry.get(STATUS) & STATUS_USED) == 0;
   }
 
@@ -995,6 +1018,7 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
   }
 
   protected static boolean isTerminating(int entryStatus) {
+    // yukms TODO: 既没有被使用 && 也没有被移除
     return (entryStatus & (STATUS_USED | STATUS_REMOVED)) == 0;
   }
 
@@ -1023,14 +1047,17 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
   }
 
   private boolean keyEquals(Object probeKey, int probeHash, long targetEncoding, int targetHash) {
+    // yukms TODO: hashcode相同 && 编码相同
     return probeHash == targetHash && storageEngine.equalsKey(probeKey, targetEncoding);
   }
 
   private boolean binaryKeyEquals(ByteBuffer binaryProbeKey, int probeHash, long targetEncoding, int targetHash) {
     if (storageEngine instanceof BinaryStorageEngine) {
-      return probeHash == targetHash && ((BinaryStorageEngine) storageEngine).equalsBinaryKey(binaryProbeKey, targetEncoding);
+      return probeHash == targetHash &&
+        ((BinaryStorageEngine) storageEngine).equalsBinaryKey(binaryProbeKey, targetEncoding);
     } else {
-      throw new UnsupportedOperationException("Cannot check binary quality unless configured with a BinaryStorageEngine");
+      throw new UnsupportedOperationException(
+        "Cannot check binary quality unless configured with a BinaryStorageEngine");
     }
   }
 
@@ -1090,8 +1117,7 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
       int slots = hashtable.capacity() / ENTRY_SIZE;
       int newslots = newsize / ENTRY_SIZE;
       LOGGER.debug("Expanding table from {} slots to {} slots [load-factor={}]",
-        DebuggingUtils.toBase2SuffixedString(slots),
-        DebuggingUtils.toBase2SuffixedString(newslots),
+        DebuggingUtils.toBase2SuffixedString(slots), DebuggingUtils.toBase2SuffixedString(newslots),
         ((float) size) / slots);
     }
 
@@ -1108,8 +1134,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
       if (isPresent(entry) && !writeEntry(newTable, entry)) {
         if (LOGGER.isDebugEnabled()) {
           LOGGER.debug("Table expansion from {} slots to {} slots abandoned - not enough table space",
-                  DebuggingUtils.toBase2SuffixedString(hashtable.capacity() / ENTRY_SIZE),
-                  DebuggingUtils.toBase2SuffixedString(newsize / ENTRY_SIZE));
+            DebuggingUtils.toBase2SuffixedString(hashtable.capacity() / ENTRY_SIZE),
+            DebuggingUtils.toBase2SuffixedString(newsize / ENTRY_SIZE));
         }
         freeTable(newTablePage);
         return expandTable(scale + 1);
@@ -1118,9 +1144,9 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
 
     if (LOGGER.isDebugEnabled()) {
       long time = System.nanoTime() - startTime;
-      LOGGER.debug("Table expansion from {} slots to {} slots complete : took {}ms", DebuggingUtils.toBase2SuffixedString(hashtable.capacity() / ENTRY_SIZE),
-        DebuggingUtils.toBase2SuffixedString(newsize / ENTRY_SIZE),
-        ((float) time) / 1000000);
+      LOGGER.debug("Table expansion from {} slots to {} slots complete : took {}ms",
+        DebuggingUtils.toBase2SuffixedString(hashtable.capacity() / ENTRY_SIZE),
+        DebuggingUtils.toBase2SuffixedString(newsize / ENTRY_SIZE), ((float) time) / 1000000);
     }
 
     return newTablePage;
@@ -1134,12 +1160,12 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
 
       if (newReprobeLimit >= REPROBE_WARNING_THRESHOLD) {
         long slots = getTableCapacity();
-        LOGGER.warn("Expanding reprobe sequence from {} slots to {} slots [load-factor={}]",
-          reprobeLimit(), newReprobeLimit, ((float) size) / slots);
+        LOGGER.warn("Expanding reprobe sequence from {} slots to {} slots [load-factor={}]", reprobeLimit(),
+          newReprobeLimit, ((float) size) / slots);
       } else if (LOGGER.isDebugEnabled()) {
         long slots = getTableCapacity();
-        LOGGER.debug("Expanding reprobe sequence from {} slots to {} slots [load-factor={}]",
-          reprobeLimit(), newReprobeLimit, ((float) size) / slots);
+        LOGGER.debug("Expanding reprobe sequence from {} slots to {} slots [load-factor={}]", reprobeLimit(),
+          newReprobeLimit, ((float) size) / slots);
       }
 
       reprobeLimit = newReprobeLimit;
@@ -1201,8 +1227,7 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
       int slots = hashtable.capacity() / ENTRY_SIZE;
       int newslots = newsize / ENTRY_SIZE;
       LOGGER.debug("Shrinking table from {} slots to {} slots [load-factor={}]",
-        DebuggingUtils.toBase2SuffixedString(slots),
-        DebuggingUtils.toBase2SuffixedString(newslots),
+        DebuggingUtils.toBase2SuffixedString(slots), DebuggingUtils.toBase2SuffixedString(newslots),
         ((float) size) / slots);
     }
 
@@ -1219,8 +1244,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
       if (isPresent(entry) && !writeEntry(newTable, entry)) {
         if (LOGGER.isDebugEnabled()) {
           LOGGER.debug("Table shrinking from {} slots to {} slots abandoned - too little table space",
-                  DebuggingUtils.toBase2SuffixedString(hashtable.capacity() / ENTRY_SIZE),
-                  DebuggingUtils.toBase2SuffixedString(newsize / ENTRY_SIZE));
+            DebuggingUtils.toBase2SuffixedString(hashtable.capacity() / ENTRY_SIZE),
+            DebuggingUtils.toBase2SuffixedString(newsize / ENTRY_SIZE));
         }
         freeTable(newTablePage);
         if (scale > 1) {
@@ -1234,9 +1259,9 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
 
     if (LOGGER.isDebugEnabled()) {
       long time = System.nanoTime() - startTime;
-      LOGGER.debug("Table shrinking from {} slots to {} slots complete : took {}ms", DebuggingUtils.toBase2SuffixedString(hashtable.capacity() / ENTRY_SIZE),
-        DebuggingUtils.toBase2SuffixedString(newsize / ENTRY_SIZE),
-        ((float) time) / 1000000);
+      LOGGER.debug("Table shrinking from {} slots to {} slots complete : took {}ms",
+        DebuggingUtils.toBase2SuffixedString(hashtable.capacity() / ENTRY_SIZE),
+        DebuggingUtils.toBase2SuffixedString(newsize / ENTRY_SIZE), ((float) time) / 1000000);
     }
 
     return newTablePage;
@@ -1272,11 +1297,16 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
   }
 
   private Page allocateTable(int size) {
-    Page newTablePage = tableSource.allocate(size * ENTRY_SIZE * (Integer.SIZE / Byte.SIZE), tableAllocationsSteal, false, null);
+    // yukms TODO: size * 每个项的大小 * (Integer大小/ Byte大小) 因为ByteBuffer是字节的
+    Page newTablePage = tableSource.allocate(size * ENTRY_SIZE * (Integer.SIZE / Byte.SIZE), tableAllocationsSteal,
+      false, null);
     if (newTablePage != null) {
+      // yukms TODO: 分配成功
       ByteBuffer buffer = newTablePage.asByteBuffer();
       byte[] zeros = new byte[1024];
+      // yukms TODO: 复位
       buffer.clear();
+      // yukms TODO: 重新设置空数据
       while (buffer.hasRemaining()) {
         if (buffer.remaining() < zeros.length) {
           buffer.put(zeros, 0, buffer.remaining());
@@ -1284,7 +1314,9 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
           buffer.put(zeros);
         }
       }
+      // yukms TODO: 再次复位
       buffer.clear();
+      // yukms TODO: 彻底清空数据
     }
     return newTablePage;
   }
@@ -1492,7 +1524,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
 
           if (isTerminating(entry)) {
             break;
-          } else if (isPresent(entry) && (hash == entry.get(KEY_HASHCODE)) && (oldEncoding == readLong(entry, ENCODING))) {
+          } else if (isPresent(entry) && (hash == entry.get(KEY_HASHCODE)) &&
+            (oldEncoding == readLong(entry, ENCODING))) {
             entry.put(newEntry.duplicate());
             break;
           } else {
@@ -1638,8 +1671,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
 
       if (isTerminating(entry)) {
         return false;
-      } else if (isPresent(entry) && keyEquals(key, hash, readLong(entry, ENCODING), entry.get(KEY_HASHCODE))
-          && storageEngine.equalsValue(e.getValue(), readLong(entry, ENCODING))) {
+      } else if (isPresent(entry) && keyEquals(key, hash, readLong(entry, ENCODING), entry.get(KEY_HASHCODE)) &&
+        storageEngine.equalsValue(e.getValue(), readLong(entry, ENCODING))) {
         storageEngine.freeMapping(readLong(entry, ENCODING), entry.get(KEY_HASHCODE), true);
 
         entry.put(STATUS, STATUS_REMOVED);
@@ -1711,7 +1744,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
 
       if (isTerminating(entry)) {
         return null;
-      } else if (isPresent(entry) && (hash == entry.get(KEY_HASHCODE)) && ((encoding & mask) == (readLong(entry, ENCODING) & mask))) {
+      } else if (isPresent(entry) && (hash == entry.get(KEY_HASHCODE)) &&
+        ((encoding & mask) == (readLong(entry, ENCODING) & mask))) {
         return view.position();
       } else {
         view.position(view.position() + ENTRY_SIZE);
@@ -1731,13 +1765,15 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
       Iterator<PendingPage> it = pendingTableFrees.values();
       while (it.hasNext()) {
         PendingPage pending = it.next();
-        updated |= updateEncodingInTable(pending.tablePage.asIntBuffer(), pending.reprobe, hash, oldEncoding, newEncoding, mask);
+        updated |= updateEncodingInTable(pending.tablePage.asIntBuffer(), pending.reprobe, hash, oldEncoding,
+          newEncoding, mask);
       }
     }
     return updated;
   }
 
-  private static boolean updateEncodingInTable(IntBuffer table, int limit, int hash, long oldEncoding, long newEncoding, long mask) {
+  private static boolean updateEncodingInTable(IntBuffer table, int limit, int hash, long oldEncoding, long newEncoding,
+    long mask) {
     table.position(indexFor(spread(hash), table));
 
     for (int i = 0; i < limit; i++) {
@@ -1749,7 +1785,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
 
       if (isTerminating(entry)) {
         return false;
-      } else if (isPresent(entry) && (hash == entry.get(KEY_HASHCODE)) && ((oldEncoding & mask) == (readLong(entry, ENCODING) & mask))) {
+      } else if (isPresent(entry) && (hash == entry.get(KEY_HASHCODE)) &&
+        ((oldEncoding & mask) == (readLong(entry, ENCODING) & mask))) {
         entry.put(createEntry(hash, (readLong(entry, ENCODING) & ~mask) | newEncoding & mask, entry.get(STATUS)));
         return true;
       } else {
@@ -1800,14 +1837,14 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
 
   protected void tableExpansionFailure(int start, int length) {
     String msg = "Failed to expand table.\n" + "Current Table Size (slots) : " + getTableCapacity() + '\n' +
-                "Resize Will Require        : " + DebuggingUtils.toBase2SuffixedString(getTableCapacity() * ENTRY_SIZE * (Integer.SIZE / Byte.SIZE) * 2) + "B\n" +
-                "Table Buffer Source        : " + tableSource;
+      "Resize Will Require        : " +
+      DebuggingUtils.toBase2SuffixedString(getTableCapacity() * ENTRY_SIZE * (Integer.SIZE / Byte.SIZE) * 2) + "B\n" +
+      "Table Buffer Source        : " + tableSource;
     throw new OversizeMappingException(msg);
   }
 
   protected void storageEngineFailure(Object failure) {
-    String msg = "Storage engine failed to store: " + failure + '\n' +
-                "StorageEngine: " + storageEngine;
+    String msg = "Storage engine failed to store: " + failure + '\n' + "StorageEngine: " + storageEngine;
     throw new OversizeMappingException(msg);
   }
 
@@ -1896,13 +1933,14 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
    * JDK-8-alike metadata methods
    */
   @FindbugsSuppressWarnings("VO_VOLATILE_INCREMENT")
-  public MetadataTuple<V> computeWithMetadata(K key, BiFunction<? super K, ? super MetadataTuple<V>, ? extends MetadataTuple<V>> remappingFunction) {
+  public MetadataTuple<V> computeWithMetadata(K key,
+    BiFunction<? super K, ? super MetadataTuple<V>, ? extends MetadataTuple<V>> remappingFunction) {
     freePendingTables();
 
     int hash = key.hashCode();
 
     IntBuffer originalTable = hashtable;
-
+    // yukms TODO: 计算start
     int start = indexFor(spread(hash));
     hashtable.position(start);
 
@@ -1910,6 +1948,7 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
 
     for (int i = 0; i < limit; i++) {
       if (!hashtable.hasRemaining()) {
+        // yukms TODO: 没有剩余
         hashtable.rewind();
       }
 
@@ -1917,16 +1956,19 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
       int entryPosition = hashtable.position();
 
       if (isAvailable(entry)) {
+        // yukms TODO: 可用
         int laterEntryPosition = entryPosition;
         for (IntBuffer laterEntry = entry; i < limit; i++) {
           if (isTerminating(laterEntry)) {
+            // yukms TODO: 正在终止？？？
             break;
-          } else if (isPresent(laterEntry) && keyEquals(key, hash, readLong(laterEntry, ENCODING), laterEntry.get(KEY_HASHCODE))) {
+          } else if (isPresent(laterEntry) // yukms TODO: 存在
+            && keyEquals(key, hash, readLong(laterEntry, ENCODING), laterEntry.get(KEY_HASHCODE))// yukms TODO:
+          ) {
             long encoding = readLong(laterEntry, ENCODING);
             @SuppressWarnings("unchecked")
-            MetadataTuple<V> existingValue = metadataTuple(
-                    (V) storageEngine.readValue(encoding),
-                    laterEntry.get(STATUS) & ~RESERVED_STATUS_BITS);
+            MetadataTuple<V> existingValue = metadataTuple((V) storageEngine.readValue(encoding),
+              laterEntry.get(STATUS) & ~RESERVED_STATUS_BITS);
             MetadataTuple<V> result = remappingFunction.apply(key, existingValue);
             if (result == null) {
               storageEngine.freeMapping(readLong(laterEntry, ENCODING), laterEntry.get(KEY_HASHCODE), true);
@@ -1939,7 +1981,7 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
               int previous = laterEntry.get(STATUS);
               laterEntry.put(STATUS, (previous & RESERVED_STATUS_BITS) | (result.metadata() & ~RESERVED_STATUS_BITS));
             } else {
-              int [] newEntry = writeEntry(key, hash, result.value(), result.metadata());
+              int[] newEntry = writeEntry(key, hash, result.value(), result.metadata());
               if (hashtable != originalTable || !isPresent(laterEntry)) {
                 storageEngine.freeMapping(readLong(newEntry, ENCODING), newEntry[KEY_HASHCODE], false);
                 return computeWithMetadata(key, remappingFunction);
@@ -1964,32 +2006,38 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
           laterEntry = (IntBuffer) hashtable.slice().limit(ENTRY_SIZE);
           laterEntryPosition = hashtable.position();
         }
+        // yukms TODO: 键不存在，所以u=null
         MetadataTuple<V> result = remappingFunction.apply(key, null);
         if (result != null) {
-          int [] newEntry = writeEntry(key, hash, result.value(), result.metadata());
+          // yukms TODO: 新增
+          int[] newEntry = writeEntry(key, hash, result.value(), result.metadata());
           if (hashtable != originalTable) {
+            // yukms TODO: 这里是因为可能扩容吗？？？
             storageEngine.freeMapping(readLong(newEntry, ENCODING), newEntry[KEY_HASHCODE], false);
             return computeWithMetadata(key, remappingFunction);
           } else if (!isAvailable(entry)) {
             throw new AssertionError();
           }
           if (isRemoved(entry)) {
+            // yukms TODO: 这里是为什么？？？
             removedSlots--;
           }
           storageEngine.attachedMapping(readLong(newEntry, ENCODING), hash, result.metadata());
+          // yukms TODO: 清空缓存
           storageEngine.invalidateCache();
+          // yukms TODO: 新增成功
           entry.put(newEntry);
           slotAdded(entryPosition, entry);
           hit(entryPosition, entry);
         }
         return result;
       } else if (keyEquals(key, hash, readLong(entry, ENCODING), entry.get(KEY_HASHCODE))) {
+        // yukms TODO: 再次寻找到key，为什么？？？
         long existingEncoding = readLong(entry, ENCODING);
         int existingStatus = entry.get(STATUS);
         @SuppressWarnings("unchecked")
-        MetadataTuple<V> existingTuple = metadataTuple(
-                (V) storageEngine.readValue(existingEncoding),
-                existingStatus & ~RESERVED_STATUS_BITS);
+        MetadataTuple<V> existingTuple = metadataTuple((V) storageEngine.readValue(existingEncoding),
+          existingStatus & ~RESERVED_STATUS_BITS);
         MetadataTuple<V> result = remappingFunction.apply(key, existingTuple);
         if (result == null) {
           storageEngine.freeMapping(existingEncoding, hash, true);
@@ -2001,7 +2049,7 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
         } else if (result.value() == existingTuple.value()) {
           entry.put(STATUS, (existingStatus & RESERVED_STATUS_BITS) | (result.metadata() & ~RESERVED_STATUS_BITS));
         } else {
-          int [] newEntry = writeEntry(key, hash, result.value(), result.metadata());
+          int[] newEntry = writeEntry(key, hash, result.value(), result.metadata());
           if (hashtable != originalTable || !isPresent(entry)) {
             storageEngine.freeMapping(readLong(newEntry, ENCODING), newEntry[KEY_HASHCODE], false);
             return computeWithMetadata(key, remappingFunction);
@@ -2015,6 +2063,7 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
         }
         return result;
       } else {
+        // yukms TODO: 下个表格
         hashtable.position(hashtable.position() + ENTRY_SIZE);
       }
     }
@@ -2026,7 +2075,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
   }
 
   @FindbugsSuppressWarnings("VO_VOLATILE_INCREMENT")
-  public MetadataTuple<V> computeIfAbsentWithMetadata(K key, Function<? super K,? extends MetadataTuple<V>> mappingFunction) {
+  public MetadataTuple<V> computeIfAbsentWithMetadata(K key,
+    Function<? super K, ? extends MetadataTuple<V>> mappingFunction) {
     freePendingTables();
 
     int hash = key.hashCode();
@@ -2050,10 +2100,10 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
         for (IntBuffer laterEntry = entry; i < limit; i++) {
           if (isTerminating(laterEntry)) {
             break;
-          } else if (isPresent(laterEntry) && keyEquals(key, hash, readLong(laterEntry, ENCODING), laterEntry.get(KEY_HASHCODE))) {
+          } else if (isPresent(laterEntry) &&
+            keyEquals(key, hash, readLong(laterEntry, ENCODING), laterEntry.get(KEY_HASHCODE))) {
             @SuppressWarnings("unchecked")
-            MetadataTuple<V> tuple = metadataTuple(
-              (V) storageEngine.readValue(readLong(laterEntry, ENCODING)),
+            MetadataTuple<V> tuple = metadataTuple((V) storageEngine.readValue(readLong(laterEntry, ENCODING)),
               laterEntry.get(STATUS) & ~RESERVED_STATUS_BITS);
             return tuple;
           } else {
@@ -2068,7 +2118,7 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
         }
         MetadataTuple<V> result = mappingFunction.apply(key);
         if (result != null) {
-          int [] newEntry = writeEntry(key, hash, result.value(), result.metadata());
+          int[] newEntry = writeEntry(key, hash, result.value(), result.metadata());
           if (hashtable != originalTable) {
             storageEngine.freeMapping(readLong(newEntry, ENCODING), newEntry[KEY_HASHCODE], false);
             return computeIfAbsentWithMetadata(key, mappingFunction);
@@ -2087,8 +2137,7 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
         return result;
       } else if (keyEquals(key, hash, readLong(entry, ENCODING), entry.get(KEY_HASHCODE))) {
         @SuppressWarnings("unchecked")
-        MetadataTuple<V> tuple = metadataTuple(
-          (V) storageEngine.readValue(readLong(entry, ENCODING)),
+        MetadataTuple<V> tuple = metadataTuple((V) storageEngine.readValue(readLong(entry, ENCODING)),
           entry.get(STATUS) & ~RESERVED_STATUS_BITS);
         return tuple;
       } else {
@@ -2103,7 +2152,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
   }
 
   @FindbugsSuppressWarnings("VO_VOLATILE_INCREMENT")
-  public MetadataTuple<V> computeIfPresentWithMetadata(K key, BiFunction<? super K,? super MetadataTuple<V>,? extends MetadataTuple<V>> remappingFunction) {
+  public MetadataTuple<V> computeIfPresentWithMetadata(K key,
+    BiFunction<? super K, ? super MetadataTuple<V>, ? extends MetadataTuple<V>> remappingFunction) {
     freePendingTables();
 
     int hash = key.hashCode();
@@ -2129,9 +2179,8 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
         long existingEncoding = readLong(entry, ENCODING);
         int existingStatus = entry.get(STATUS);
         @SuppressWarnings("unchecked")
-        MetadataTuple<V> existingValue = metadataTuple(
-                (V) storageEngine.readValue(existingEncoding),
-                existingStatus & ~RESERVED_STATUS_BITS);
+        MetadataTuple<V> existingValue = metadataTuple((V) storageEngine.readValue(existingEncoding),
+          existingStatus & ~RESERVED_STATUS_BITS);
         MetadataTuple<V> result = remappingFunction.apply(key, existingValue);
         if (result == null) {
           storageEngine.freeMapping(existingEncoding, hash, true);
@@ -2143,7 +2192,7 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V> implements MapIntern
         } else if (result.value() == existingValue.value()) {
           entry.put(STATUS, (existingStatus & RESERVED_STATUS_BITS) | (result.metadata() & ~RESERVED_STATUS_BITS));
         } else {
-          int [] newEntry = writeEntry(key, hash, result.value(), result.metadata());
+          int[] newEntry = writeEntry(key, hash, result.value(), result.metadata());
           if (hashtable != originalTable || !isPresent(entry)) {
             storageEngine.freeMapping(readLong(newEntry, ENCODING), newEntry[KEY_HASHCODE], false);
             return computeIfPresentWithMetadata(key, remappingFunction); //not exactly ideal - but technically correct

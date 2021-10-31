@@ -67,9 +67,11 @@ public abstract class PortabilityBasedStorageEngine<K, V> extends AbstractListen
       ByteBuffer keyBuffer = keyPortability.encode(key);
       ByteBuffer valueBuffer = valuePortability.encode(value);
       result = writeMappingBuffers(keyBuffer.duplicate(), valueBuffer.duplicate(), hash);
+      // yukms TODO: 缓存最后一次CachedEncode
       lastMapping = new CachedEncode<>(key, value, keyBuffer, valueBuffer, result);
     }
     if (result != null) {
+      // yukms TODO: 通知
       fireWritten(key, value, lastMapping.getEncodedKey(), lastMapping.getEncodedValue(), hash, metadata, result);
     }
     return result;

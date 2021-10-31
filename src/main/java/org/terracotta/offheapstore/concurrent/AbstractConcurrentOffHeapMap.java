@@ -714,10 +714,10 @@ public abstract class AbstractConcurrentOffHeapMap<K, V> extends AbstractMap<K, 
     Segment<?, ?> target = segmentFor(hash);
     for (Segment<?, ?> s : segments) {
       if (s != target) {
+        // yukms TODO: 收缩成功，则再次尝试
         evicted |= s.shrink();
       }
     }
-
     return evicted;
   }
 
@@ -728,14 +728,17 @@ public abstract class AbstractConcurrentOffHeapMap<K, V> extends AbstractMap<K, 
     try {
       return segmentFor(key).computeWithMetadata(key, remappingFunction);
     } catch (OversizeMappingException e) {
+      // yukms TODO: 超过大小
       if (handleOversizeMappingException(key.hashCode())) {
         try {
           return segmentFor(key).computeWithMetadata(key, remappingFunction);
         } catch (OversizeMappingException ex) {
+          // yukms TODO: 收缩后还是超过大小
           //ignore
         }
       }
 
+      // yukms TODO: 全部加锁尝试分配
       writeLockAll();
       try {
         do {
@@ -745,6 +748,7 @@ public abstract class AbstractConcurrentOffHeapMap<K, V> extends AbstractMap<K, 
             e = ex;
           }
         } while (handleOversizeMappingException(key.hashCode()));
+        // yukms TODO: 还是分配失败
         throw e;
       } finally {
         writeUnlockAll();

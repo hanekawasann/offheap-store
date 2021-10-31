@@ -64,6 +64,7 @@ public interface Segment<K, V> extends ConcurrentMap<K, V>, MapInternals, ReadWr
 
   void destroy();
 
+  // yukms TODO: 收缩
   boolean shrink();
 
   /*

@@ -66,15 +66,15 @@ public class PowerOfTwoAllocator extends AATreeSet<Region> {
       throw new AssertionError("Size " + size + " is not a power of two");
     }
 
-    // yukms TODO: 找到分类区域
+    // yukms TODO: 寻找指定大小的区域
     final Region r = findRegion(size, packing);
     if (r == null) {
-      // yukms TODO: 找到了
+      // yukms TODO: 没找到
       return -1;
     }
-    // yukms TODO: 找到地址对应的区域
+    // yukms TODO: 根据start寻找分配区域
     Region current = removeAndReturn(r.start());
-    // yukms TODO: 移除占用的大小
+    // yukms TODO: 分配并生成新区域
     Region newRange = current.remove(r);
     if (newRange != null) {
       // yukms TODO: 生成了新区域
@@ -84,8 +84,9 @@ public class PowerOfTwoAllocator extends AATreeSet<Region> {
       // yukms TODO: 未生成新区域 && 分配的区域还有空间
       insert(current);
     }
-    // yukms TODO: 更新以分配的大小
+    // yukms TODO: 更新已分配的大小
     occupied += r.size();
+    // yukms TODO: 校验剩余空间
     validateFreeSpace();
 
     // yukms TODO: 返回开始地址
@@ -122,17 +123,25 @@ public class PowerOfTwoAllocator extends AATreeSet<Region> {
     }
   }
 
+  // yukms TODO: 和allocate是什么关系？？？
   public void claim(int address, int size) {
+    // yukms TODO: 被分配的区域
     Region current = removeAndReturn(address);
+    // yukms TODO: 需要分配的区域
     Region r = new Region(address, address + size - 1);
+    // yukms TODO: 分配并生成新区域
     Region newRange = current.remove(r);
     if (newRange != null) {
+      // yukms TODO: 生成了新区域
       insert(current);
       insert(newRange);
     } else if (!current.isNull()) {
+      // yukms TODO: 未生成新区域 && 分配的区域还有空间
       insert(current);
     }
+    // yukms TODO: 更新已分配的大小
     occupied += size;
+    // yukms TODO: 校验剩余空间
     validateFreeSpace();
   }
 
@@ -302,7 +311,7 @@ public class PowerOfTwoAllocator extends AATreeSet<Region> {
   }
 
   public enum Packing {
-    // yukms TODO: 地板，下舍位取整
+    // yukms TODO: 地板
     FLOOR {
 
       @Override
@@ -323,7 +332,7 @@ public class PowerOfTwoAllocator extends AATreeSet<Region> {
       }
     },
 
-    // yukms TODO: 天花板，上进位取整
+    // yukms TODO: 天花板
     CEILING {
 
       @Override

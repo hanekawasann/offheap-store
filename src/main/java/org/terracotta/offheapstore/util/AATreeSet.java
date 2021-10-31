@@ -217,7 +217,7 @@ public class AATreeSet<T extends Comparable<? super T>> extends AbstractSet<T> i
           item.swapPayload(top);
           // yukms TODO: 移除的
           removed = top.getPayload();
-          // yukms TODO: top替换为getRight()
+          // yukms TODO: top替换为getRight()，即移除top
           top = top.getRight();
         }
       } else {

@@ -55,10 +55,12 @@ public class OffHeapBufferStorageEngine<K, V> extends PortabilityBasedStorageEng
 
   /*
    * Future design ideas:
+   * 未来的设计理念：
    *
    * We might want to look in to supporting shrinking of the data areas, in case
    * our storage demands change (e.g. due to a change in key distribution, or
    * change in value types).
+   * 我们可能希望考虑支持数据区域的缩小，以防存储需求发生变化（例如，由于密钥分布的变化或值类型的变化）。
    */
 
   public static <K, V> Factory<OffHeapBufferStorageEngine<K, V>> createFactory(final PointerSize width, final PageSource source, final int pageSize, final Portability<? super K> keyPortability, final Portability<? super V> valuePortability, final boolean thief, final boolean victim) {
