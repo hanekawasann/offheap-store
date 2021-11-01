@@ -101,9 +101,9 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V>
 
   // yukms TODO: index=0，状态
   protected static final int STATUS = 0;
-  // yukms TODO: index=0，key的hashcode
+  // yukms TODO: index=1，key的hashcode
   protected static final int KEY_HASHCODE = 1;
-  // yukms TODO: index=0，编码
+  // yukms TODO: index=2，编码
   protected static final int ENCODING = 2;
 
   // yukms TODO: 状态：已使用
@@ -2032,7 +2032,7 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V>
         }
         return result;
       } else if (keyEquals(key, hash, readLong(entry, ENCODING), entry.get(KEY_HASHCODE))) {
-        // yukms TODO: 再次寻找到key，为什么？？？
+        // yukms TODO: 不可用 && entry是查找的元素
         long existingEncoding = readLong(entry, ENCODING);
         int existingStatus = entry.get(STATUS);
         @SuppressWarnings("unchecked")
@@ -2040,22 +2040,30 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V>
           existingStatus & ~RESERVED_STATUS_BITS);
         MetadataTuple<V> result = remappingFunction.apply(key, existingTuple);
         if (result == null) {
+          // yukms TODO: 新值为null，可能已过期，释放映射
           storageEngine.freeMapping(existingEncoding, hash, true);
+          // yukms TODO: 标志已被移除
           entry.put(STATUS, STATUS_REMOVED);
+          // yukms TODO: 移除entry
           slotRemoved(entryPosition, entry);
           shrink();
         } else if (result == existingTuple) {
+          // yukms TODO: ==？？？
           //nop
         } else if (result.value() == existingTuple.value()) {
+          // yukms TODO: 值未变，这里是什么意思？？？
           entry.put(STATUS, (existingStatus & RESERVED_STATUS_BITS) | (result.metadata() & ~RESERVED_STATUS_BITS));
         } else {
+          // yukms TODO: 写入
           int[] newEntry = writeEntry(key, hash, result.value(), result.metadata());
           if (hashtable != originalTable || !isPresent(entry)) {
+            // yukms TODO: ？？？
             storageEngine.freeMapping(readLong(newEntry, ENCODING), newEntry[KEY_HASHCODE], false);
             return computeWithMetadata(key, remappingFunction);
           }
           storageEngine.attachedMapping(readLong(newEntry, ENCODING), hash, result.metadata());
           storageEngine.invalidateCache();
+          // yukms TODO: 释放旧entry
           storageEngine.freeMapping(readLong(entry, ENCODING), entry.get(KEY_HASHCODE), false);
           entry.put(newEntry);
           slotUpdated(entryPosition, (IntBuffer) entry.flip(), existingEncoding);
@@ -2063,14 +2071,16 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V>
         }
         return result;
       } else {
-        // yukms TODO: 下个表格
+        // yukms TODO: 下个键
         hashtable.position(hashtable.position() + ENTRY_SIZE);
       }
     }
 
     // hit reprobe limit - must rehash
+    // yukms TODO: 扩容
     expand(start, limit);
 
+    // yukms TODO: 扩容后再来
     return computeWithMetadata(key, remappingFunction);
   }
 
@@ -2174,15 +2184,19 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V>
       int entryPosition = hashtable.position();
 
       if (isTerminating(entry)) {
+        // yukms TODO: 正在终止
         return null;
       } else if (isPresent(entry) && keyEquals(key, hash, readLong(entry, ENCODING), entry.get(KEY_HASHCODE))) {
+        // yukms TODO: entry存在 && 是寻找的entry
         long existingEncoding = readLong(entry, ENCODING);
         int existingStatus = entry.get(STATUS);
+        // yukms TODO: existingStatus & ~RESERVED_STATUS_BITS 清除状态
         @SuppressWarnings("unchecked")
         MetadataTuple<V> existingValue = metadataTuple((V) storageEngine.readValue(existingEncoding),
           existingStatus & ~RESERVED_STATUS_BITS);
         MetadataTuple<V> result = remappingFunction.apply(key, existingValue);
         if (result == null) {
+          // yukms TODO: 已过期
           storageEngine.freeMapping(existingEncoding, hash, true);
           entry.put(STATUS, STATUS_REMOVED);
           slotRemoved(entryPosition, entry);
@@ -2192,6 +2206,7 @@ public class OffHeapHashMap<K, V> extends AbstractMap<K, V>
         } else if (result.value() == existingValue.value()) {
           entry.put(STATUS, (existingStatus & RESERVED_STATUS_BITS) | (result.metadata() & ~RESERVED_STATUS_BITS));
         } else {
+          // yukms TODO: 写入
           int[] newEntry = writeEntry(key, hash, result.value(), result.metadata());
           if (hashtable != originalTable || !isPresent(entry)) {
             storageEngine.freeMapping(readLong(newEntry, ENCODING), newEntry[KEY_HASHCODE], false);
